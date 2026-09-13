@@ -4,8 +4,11 @@ import type { NextRequest } from 'next/server'
 export function proxy(request: NextRequest) {
   const accessToken = request.cookies.get('accessToken')?.value
   const refreshToken = request.cookies.get('refreshToken')?.value
+  const hasSupabaseCookie = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith('sb-') && c.name.includes('-auth-token'))
 
-  const isAuthed = Boolean(accessToken || refreshToken)
+  const isAuthed = Boolean(accessToken || refreshToken || hasSupabaseCookie)
 
   const { pathname, searchParams } = request.nextUrl
 
@@ -15,11 +18,12 @@ export function proxy(request: NextRequest) {
     )
   }
 
-  if (pathname === '/login' && isAuthed) {
+  if ((pathname === '/login' || pathname === '/register') && isAuthed) {
     const target = searchParams.get('redirect') ?? '/dashboard'
-    const safeTarget = target.startsWith('/') && !target.startsWith('//')
-      ? target
-      : '/dashboard'
+    const safeTarget =
+      target.startsWith('/') && !target.startsWith('//')
+        ? target
+        : '/dashboard'
     return NextResponse.redirect(new URL(safeTarget, request.url))
   }
 
@@ -33,5 +37,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/login', '/dashboard/:path*'],
+  matcher: ['/', '/login', '/register', '/dashboard/:path*'],
 }

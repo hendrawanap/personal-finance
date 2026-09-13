@@ -32,7 +32,8 @@ const STRENGTH = [
 function ResetPasswordContent() {
     const router = useRouter()
     const params = useSearchParams()
-    const token = params.get('token')
+    const hasHashRecovery = typeof window !== 'undefined' && window.location.hash.includes('access_token')
+    const token = params.get('token') || params.get('code') || (hasHashRecovery ? 'supabase-recovery' : null)
 
     const [password, setPassword] = useState('')
     const [confirm, setConfirm] = useState('')

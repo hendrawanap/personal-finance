@@ -92,11 +92,17 @@ interface FinanceStoreState {
 export const useFinanceStore = create<FinanceStoreState>()(
   persist(
     (set, get) => ({
-      accounts: INITIAL_ACCOUNTS,
-      transactions: INITIAL_TRANSACTIONS,
-      budgets: INITIAL_BUDGETS,
-      splitBills: INITIAL_SPLIT_BILLS,
-      profile: INITIAL_PROFILE,
+      accounts: [],
+      transactions: [],
+      budgets: [],
+      splitBills: [],
+      profile: {
+        name: "User",
+        email: "",
+        currencySymbol: "Rp",
+        currencyCode: "IDR",
+        monthlySavingsTarget: 3000,
+      },
       _hasHydrated: false,
       setHasHydrated: (state) => set({ _hasHydrated: state }),
 
@@ -664,22 +670,17 @@ export const useFinanceStore = create<FinanceStoreState>()(
         try {
           const remote = await fetchAllFromSupabase();
           if (!remote) return false;
-          if (
-            remote.accounts.length > 0 ||
-            remote.transactions.length > 0 ||
-            remote.splitBills.length > 0 ||
-            remote.budgets.length > 0
-          ) {
-            set((state) => ({
-              accounts: remote.accounts,
-              transactions: remote.transactions,
-              budgets: remote.budgets,
-              splitBills: remote.splitBills,
-              profile: remote.profile ? { ...state.profile, ...remote.profile } : state.profile,
-            }));
-            return true;
-          }
-          return false;
+
+          set((state) => ({
+            accounts: remote.accounts,
+            transactions: remote.transactions,
+            budgets: remote.budgets,
+            splitBills: remote.splitBills,
+            profile: remote.profile
+              ? { ...state.profile, ...remote.profile }
+              : state.profile,
+          }));
+          return true;
         } catch (err) {
           console.error("Failed to sync from Supabase:", err);
           return false;

@@ -141,14 +141,14 @@ export default function Header({
                     ) : (
                         <>
                             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E4E9DC] text-xs font-semibold text-[#4F6B52] ring-2 ring-[#B4884F]/40">
-                                {getInitials(storeProfile?.name || profile?.name || 'User')}
+                                {getInitials(profile?.name || storeProfile?.name || 'User')}
                             </div>
                             <div className="hidden text-left text-xs leading-tight sm:block">
                                 <p className="font-medium text-[#1D1B16]">
-                                    {storeProfile?.name || profile?.name || 'User'}
+                                    {profile?.name || storeProfile?.name || 'User'}
                                 </p>
                                 <p className="text-[#8A8271]">
-                                    {storeProfile?.email || profile?.email || 'alex.morgan@finance.io'}
+                                    {profile?.email || storeProfile?.email || 'user@finance.io'}
                                 </p>
                             </div>
                         </>

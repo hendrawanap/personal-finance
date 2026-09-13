@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 import {
   Download01Icon,
   Upload01Icon,
@@ -11,6 +12,11 @@ import {
   DatabaseIcon,
   FloppyDiskIcon,
   CloudIcon,
+  LockPasswordIcon,
+  Logout03Icon,
+  Copy01Icon,
+  CheckmarkCircle02Icon,
+  SecurityCheckIcon,
 } from "hugeicons-react";
 
 import { Heading } from "@/components/molecules/dashboard/head";
@@ -23,6 +29,7 @@ import {
   TextInput,
 } from "@/components/molecules/inputs/form";
 import ConfirmDialog from "@/components/molecules/dashboard/unit/confirmDialog";
+import { DialogShell } from "@/components/molecules/dashboard/unit/dialogShell";
 import { useFinanceStore, useFinanceHydrated } from "@/store/useFinanceStore";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import {
@@ -31,8 +38,134 @@ import {
   STORAGE_KEY,
 } from "@/lib/storage/financeStorage";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
+import { useProfile } from "@/hooks/query/auth/profile";
+import {
+  getCurrentSupabaseUser,
+  updateSupabasePassword,
+  updateSupabaseUserProfile,
+} from "@/services/supabase/auth.service";
+import { logout } from "@/services/auth/auth.service";
+import { FinancialProfile } from "@/types/finance";
+
+interface ProfilePreferencesProps {
+  initialProfile: FinancialProfile;
+  supabaseConfigured: boolean;
+  onSave: (updated: FinancialProfile) => Promise<void>;
+}
+
+function ProfilePreferencesSection({
+  initialProfile,
+  onSave,
+}: ProfilePreferencesProps) {
+  const [name, setName] = useState(initialProfile.name);
+  const [email, setEmail] = useState(initialProfile.email);
+  const [currencySymbol, setCurrencySymbol] = useState(initialProfile.currencySymbol);
+  const [currencyCode, setCurrencyCode] = useState(initialProfile.currencyCode);
+  const [monthlySavingsTarget, setMonthlySavingsTarget] = useState(
+    String(initialProfile.monthlySavingsTarget || 3000),
+  );
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      await onSave({
+        name: name.trim() || "User",
+        email: email.trim(),
+        currencySymbol,
+        currencyCode,
+        monthlySavingsTarget: parseFloat(monthlySavingsTarget) || 0,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <FormSection
+        title="User Profile & Currency"
+        description="Personalize your identity and default currency representation in your Supabase profile."
+        icon={<UserIcon size={18} />}
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Full Name" required>
+            <TextInput
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your Name"
+            />
+          </Field>
+
+          <Field label="Email Address">
+            <TextInput
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your.email@domain.com"
+            />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Field label="Currency Standard">
+            <NativeSelect
+              value={currencyCode}
+              onChange={(e) => {
+                const code = e.target.value;
+                setCurrencyCode(code);
+                const matched = SUPPORTED_CURRENCIES.find((c) => c.code === code);
+                if (matched) {
+                  setCurrencySymbol(matched.symbol);
+                }
+              }}
+            >
+              {SUPPORTED_CURRENCIES.map((cur) => (
+                <option key={cur.code} value={cur.code}>
+                  {cur.label}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+
+          <Field label="Currency Symbol">
+            <TextInput
+              value={currencySymbol}
+              onChange={(e) => setCurrencySymbol(e.target.value)}
+              placeholder="$ or Rp"
+            />
+          </Field>
+
+          <Field label={`Monthly Savings Target (${currencySymbol})`}>
+            <TextInput
+              type="number"
+              step="100"
+              value={monthlySavingsTarget}
+              onChange={(e) => setMonthlySavingsTarget(e.target.value)}
+              placeholder="3000"
+            />
+          </Field>
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <Buttons
+            style="main"
+            type="submit"
+            loading={isSaving}
+            icon={<FloppyDiskIcon size={16} />}
+            className="w-full sm:w-auto justify-center"
+          >
+            Save Preferences
+          </Buttons>
+        </div>
+      </FormSection>
+    </form>
+  );
+}
 
 export default function SettingsPage() {
+  const router = useRouter();
   const hydrated = useFinanceHydrated();
   const profile = useFinanceStore((s) => s.profile);
   const updateProfile = useFinanceStore((s) => s.updateProfile);
@@ -46,9 +179,38 @@ export default function SettingsPage() {
   const syncToSupabase = useFinanceStore((s) => s.syncToSupabase);
   const syncFromSupabase = useFinanceStore((s) => s.syncFromSupabase);
 
+  const { data: authProfile } = useProfile();
+  const [supabaseUser, setSupabaseUser] = useState<{
+    id: string;
+    email?: string;
+    createdAt?: string;
+    lastSignIn?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (isSupabaseConfigured()) {
+      getCurrentSupabaseUser().then((u) => {
+        if (u) {
+          setSupabaseUser({
+            id: u.id,
+            email: u.email,
+            createdAt: u.created_at,
+            lastSignIn: u.last_sign_in_at,
+          });
+        }
+      });
+    }
+  }, []);
+
   const [isSyncingToSupabase, setIsSyncingToSupabase] = useState(false);
   const [isSyncingFromSupabase, setIsSyncingFromSupabase] = useState(false);
   const supabaseConfigured = isSupabaseConfigured();
+
+  // Password change modal state
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   const handlePushToSupabase = async () => {
     if (!supabaseConfigured) {
@@ -92,31 +254,60 @@ export default function SettingsPage() {
     }
   };
 
-  // Form states for profile
-  const [name, setName] = useState(profile.name);
-  const [email, setEmail] = useState(profile.email);
-  const [currencySymbol, setCurrencySymbol] = useState(profile.currencySymbol);
-  const [currencyCode, setCurrencyCode] = useState(profile.currencyCode);
-  const [monthlySavingsTarget, setMonthlySavingsTarget] = useState(
-    String(profile.monthlySavingsTarget || 3000),
-  );
-
   // Dialog states
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (updated: FinancialProfile) => {
+    updateProfile(updated);
+
+    if (supabaseConfigured) {
+      await updateSupabaseUserProfile(updated);
+      toast.success("Preferences updated and synced to Supabase profile");
+    } else {
+      toast.success("Preferences saved to LocalStorage");
+    }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile({
-      name: name.trim() || "User",
-      email: email.trim(),
-      currencySymbol,
-      currencyCode,
-      monthlySavingsTarget: parseFloat(monthlySavingsTarget) || 0,
-    });
-    toast.success("Preferences saved to LocalStorage");
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters long");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      await updateSupabasePassword(newPassword);
+      toast.success("Password updated successfully");
+      setPasswordDialogOpen(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to update password";
+      toast.error(msg);
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
+  const handleCopyUserId = () => {
+    if (supabaseUser?.id) {
+      navigator.clipboard.writeText(supabaseUser.id);
+      toast.success("User ID copied to clipboard");
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    toast.success("Logged out successfully");
+    router.push("/login");
   };
 
   const handleExportBackup = () => {
@@ -146,7 +337,6 @@ export default function SettingsPage() {
       try {
         const content = event.target?.result as string;
         importFinanceDataFromJson(content);
-        // Sync local store
         const parsed = JSON.parse(content);
         useFinanceStore.getState().importData(parsed);
         toast.success("Data restored successfully from backup");
@@ -157,18 +347,11 @@ export default function SettingsPage() {
       }
     };
     reader.readAsText(file);
-
-    // Reset input
     e.target.value = "";
   };
 
   const handleConfirmReset = () => {
     resetToDefaults();
-    setName("Alex Morgan");
-    setEmail("alex.morgan@finance.io");
-    setCurrencySymbol("$");
-    setCurrencyCode("USD");
-    setMonthlySavingsTarget("3000");
     setResetConfirmOpen(false);
     toast.success("Reset all data to default sample data");
   };
@@ -193,11 +376,14 @@ export default function SettingsPage() {
     }
   }, [accounts.length, transactions.length, budgets.length]);
 
+  const activeEmail = supabaseUser?.email || authProfile?.email || profile.email;
+  const activeName = authProfile?.name || profile.name || "User";
+
   return (
     <PageShell width="narrow" spacing="md">
       <Heading
         title="Settings & Preferences"
-        subtitle="Manage user preferences, currency standards, and LocalStorage data."
+        subtitle="Manage your Supabase user account, currency standards, and data synchronization."
         noIcon
       />
 
@@ -210,89 +396,87 @@ export default function SettingsPage() {
         className="hidden"
       />
 
-      {/* Profile & Currency Preferences Form */}
-      <form onSubmit={handleSaveProfile} className="space-y-6">
-        <FormSection
-          title="User Profile & Currency"
-          description="Personalize your identity and default currency representation."
-          icon={<UserIcon size={18} />}
-        >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Full Name" required>
-              <TextInput
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your Name"
-              />
-            </Field>
+      {/* Supabase User Account Section */}
+      <FormSection
+        title="Supabase User Account"
+        description="Your cloud authentication profile and account security."
+        icon={<SecurityCheckIcon size={18} />}
+      >
+        <div className="rounded-xl border border-xenia-border bg-white p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-xenia-moss-50 text-base font-semibold text-xenia-moss-700 ring-2 ring-xenia-brass-500/30">
+                {activeName.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-semibold text-xenia-ink-900 truncate">
+                    {activeName}
+                  </p>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-xenia-moss-50 px-2 py-0.5 text-[11px] font-medium text-xenia-moss-700 border border-xenia-moss-200">
+                    <CheckmarkCircle02Icon size={13} />
+                    Supabase Authenticated
+                  </span>
+                </div>
+                <p className="text-xs text-xenia-stone-500 truncate mt-0.5">
+                  {activeEmail || "No email assigned"}
+                </p>
+                {supabaseUser?.id && (
+                  <div className="mt-2 flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] text-xenia-stone-500">User ID:</span>
+                    <code className="rounded bg-xenia-sand-100 px-1.5 py-0.5 font-mono text-[10px] text-xenia-stone-700">
+                      {supabaseUser.id.substring(0, 13)}...
+                    </code>
+                    <button
+                      type="button"
+                      onClick={handleCopyUserId}
+                      title="Copy full User ID"
+                      className="cursor-pointer text-xenia-stone-400 hover:text-xenia-stone-700 transition-colors"
+                    >
+                      <Copy01Icon size={13} />
+                    </button>
+                    <span className="text-[11px] text-xenia-moss-700 font-medium">
+                      • Strict Owner Isolation Active
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
 
-            <Field label="Email Address">
-              <TextInput
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your.email@domain.com"
-              />
-            </Field>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="Currency Standard">
-              <NativeSelect
-                value={currencyCode}
-                onChange={(e) => {
-                  const code = e.target.value;
-                  setCurrencyCode(code);
-                  const matched = SUPPORTED_CURRENCIES.find((c) => c.code === code);
-                  if (matched) {
-                    setCurrencySymbol(matched.symbol);
-                  }
-                }}
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 pt-2 sm:pt-0">
+              <Buttons
+                style="second"
+                size="sm"
+                icon={<LockPasswordIcon size={14} />}
+                onClick={() => setPasswordDialogOpen(true)}
               >
-                {SUPPORTED_CURRENCIES.map((cur) => (
-                  <option key={cur.code} value={cur.code}>
-                    {cur.label}
-                  </option>
-                ))}
-              </NativeSelect>
-            </Field>
-
-            <Field label="Currency Symbol">
-              <TextInput
-                value={currencySymbol}
-                onChange={(e) => setCurrencySymbol(e.target.value)}
-                placeholder="$ or Rp"
-              />
-            </Field>
-
-            <Field label={`Monthly Savings Target (${currencySymbol})`}>
-              <TextInput
-                type="number"
-                step="100"
-                value={monthlySavingsTarget}
-                onChange={(e) => setMonthlySavingsTarget(e.target.value)}
-                placeholder="3000"
-              />
-            </Field>
+                Change Password
+              </Buttons>
+              <Buttons
+                style="fourth"
+                size="sm"
+                icon={<Logout03Icon size={14} />}
+                onClick={handleLogout}
+              >
+                Sign Out
+              </Buttons>
+            </div>
           </div>
+        </div>
+      </FormSection>
 
-          <div className="flex justify-end pt-2">
-            <Buttons
-              style="main"
-              type="submit"
-              icon={<FloppyDiskIcon size={16} />}
-              className="w-full sm:w-auto justify-center"
-            >
-              Save Preferences
-            </Buttons>
-          </div>
-        </FormSection>
-      </form>
+      {/* Profile & Currency Preferences Form */}
+      <ProfilePreferencesSection
+        key={`${profile.name}-${profile.email}-${profile.currencyCode}-${profile.currencySymbol}-${profile.monthlySavingsTarget}`}
+        initialProfile={profile}
+        supabaseConfigured={supabaseConfigured}
+        onSave={handleSaveProfile}
+      />
 
       {/* Supabase Cloud Database Section */}
       <FormSection
         title="Supabase Cloud Storage"
-        description="Connect and synchronize your accounts, transactions, and split bills with your remote PostgreSQL database."
+        description="Synchronize your personal accounts, transactions, and split bills with your remote PostgreSQL database."
         icon={<CloudIcon size={18} />}
       >
         <div className="rounded-xl border border-xenia-border bg-white p-4">
@@ -317,11 +501,11 @@ export default function SettingsPage() {
               <p className="mt-1 text-xs text-xenia-stone-500">
                 Schema: <code className="font-mono font-semibold text-xenia-moss-700">personal_finance</code>
                 {" • "}
-                Publishable Key: <code className="font-mono text-[11px] text-xenia-stone-600">sb_publishable_qa7P...</code>
+                RLS: <span className="font-semibold text-xenia-moss-700">Enabled by user_id</span>
               </p>
               {!supabaseConfigured && (
                 <p className="mt-2 text-xs text-xenia-brass-700 bg-xenia-brass-50/80 p-2.5 rounded-xl border border-xenia-brass-200">
-                  Publishable key is set. To complete connection, add your <code className="font-semibold">NEXT_PUBLIC_SUPABASE_URL</code> to <code className="font-semibold">.env</code>.
+                  To connect, add your <code className="font-semibold">NEXT_PUBLIC_SUPABASE_URL</code> and <code className="font-semibold">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in <code className="font-semibold">.env</code>.
                 </p>
               )}
             </div>
@@ -354,7 +538,7 @@ export default function SettingsPage() {
       {/* LocalStorage Data Management Section */}
       <FormSection
         title="LocalStorage Data Management"
-        description="All application data is securely kept in your browser's LocalStorage."
+        description="Client-side storage provides rapid offline performance and local persistence."
         icon={<DatabaseIcon size={18} />}
       >
         {/* Storage stats */}
@@ -479,6 +663,54 @@ export default function SettingsPage() {
           </div>
         </div>
       </FormSection>
+
+      {/* Password Change Modal */}
+      <DialogShell
+        open={passwordDialogOpen}
+        onClose={() => setPasswordDialogOpen(false)}
+        title="Change Supabase Password"
+        description="Enter a new password for your Supabase account."
+        size="sm"
+      >
+        <form onSubmit={handlePasswordSubmit} className="space-y-4 pt-2">
+          <Field label="New Password (min. 6 characters)" required>
+            <TextInput
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+          </Field>
+          <Field label="Confirm New Password" required>
+            <TextInput
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+          </Field>
+          <div className="flex justify-end gap-2 pt-4">
+            <Buttons
+              type="button"
+              style="second"
+              size="sm"
+              onClick={() => setPasswordDialogOpen(false)}
+            >
+              Cancel
+            </Buttons>
+            <Buttons
+              type="submit"
+              style="main"
+              size="sm"
+              loading={isUpdatingPassword}
+            >
+              Update Password
+            </Buttons>
+          </div>
+        </form>
+      </DialogShell>
 
       {/* Confirm Reset Dialog */}
       <ConfirmDialog

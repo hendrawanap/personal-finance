@@ -108,7 +108,7 @@ export default function Sidebar({ sidebarOpen, onClose }: sidebarProps) {
           {/* Welcome */}
           <div className="mt-8 px-1">
             <p className="font-display text-xl leading-tight font-medium text-[#F2ECDD]">
-              Welcome, <span className="text-[#B4884F]">{storeProfile?.name || profile?.name || "User"}</span>
+              Welcome, <span className="text-[#B4884F]">{profile?.name || storeProfile?.name || "User"}</span>
             </p>
             <p className="mt-1 text-xs text-[#7C9878]">
               Your financial health & overview

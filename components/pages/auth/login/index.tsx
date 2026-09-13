@@ -1,5 +1,7 @@
 'use client'
+
 import { useState } from 'react'
+import Link from 'next/link'
 import {
   Mail01Icon,
   LockPasswordIcon,
@@ -11,7 +13,7 @@ import {
   SparklesIcon,
 } from 'hugeicons-react'
 import { useAdminLogin } from '@/hooks/mutation/auth/useAdminLogin'
-import { setCookie } from 'cookies-next'
+import { demoLogin } from '@/services/auth/auth.service'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
@@ -28,11 +30,14 @@ export default function LoginPage() {
     login({ identifier: email, password })
   }
 
-  const handleDemoLogin = () => {
-    setCookie('accessToken', 'demo-access-token')
-    setCookie('refreshToken', 'demo-refresh-token')
-    toast.success('Signed in as Demo User')
-    router.push('/dashboard')
+  const handleDemoLogin = async () => {
+    try {
+      await demoLogin()
+      toast.success('Signed in as Demo User')
+      router.push('/dashboard')
+    } catch {
+      toast.error('Failed to start demo session')
+    }
   }
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,7 +72,7 @@ export default function LoginPage() {
 
         {/* Demo Fast Login */}
         <div className="mb-6 rounded-2xl border border-xenia-border bg-white/70 p-4 text-center">
-          <p className="text-xs text-[#5C5748]">Testing locally without an API backend?</p>
+          <p className="text-xs text-[#5C5748]">Testing offline without Supabase credentials?</p>
           <button
             type="button"
             onClick={handleDemoLogin}
@@ -138,12 +143,12 @@ export default function LoginPage() {
 
           {/* Forgot password */}
           <div className="flex items-center justify-between text-xs pt-1">
-            <a
+            <Link
               href="/forgot-password"
               className="ml-auto text-[#9A7140] hover:text-[#7A5A32] font-medium transition-colors"
             >
               Forgot Password?
-            </a>
+            </Link>
           </div>
 
           {/* Error message */}
@@ -170,6 +175,17 @@ export default function LoginPage() {
             {!isPending && <ArrowRight03Icon size={18} />}
           </button>
         </form>
+
+        {/* Sign up link */}
+        <div className="mt-6 text-center text-xs text-[#8A8271]">
+          Don&apos;t have an account?{' '}
+          <Link
+            href="/register"
+            className="font-semibold text-[#4F6B52] hover:text-[#3F5A43] underline transition-colors"
+          >
+            Sign up
+          </Link>
+        </div>
       </div>
     </div>
   )

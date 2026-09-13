@@ -194,81 +194,131 @@ ALTER TABLE personal_finance.split_bill_items ENABLE ROW LEVEL SECURITY;
 
 -- Profiles Policies
 DROP POLICY IF EXISTS "Users can manage own profile" ON personal_finance.profiles;
-CREATE POLICY "Users can manage own profile"
+CREATE POLICY "Strict: Users can manage own profile"
     ON personal_finance.profiles
     FOR ALL
-    USING (user_id IS NULL OR user_id = auth.uid() OR auth.uid() IS NULL)
-    WITH CHECK (user_id IS NULL OR user_id = auth.uid() OR auth.uid() IS NULL);
+    TO authenticated
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
 
 -- Accounts Policies
 DROP POLICY IF EXISTS "Users can manage own accounts" ON personal_finance.accounts;
-CREATE POLICY "Users can manage own accounts"
+CREATE POLICY "Strict: Users can manage own accounts"
     ON personal_finance.accounts
     FOR ALL
-    USING (user_id IS NULL OR user_id = auth.uid() OR auth.uid() IS NULL)
-    WITH CHECK (user_id IS NULL OR user_id = auth.uid() OR auth.uid() IS NULL);
+    TO authenticated
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
 
 -- Transactions Policies
 DROP POLICY IF EXISTS "Users can manage own transactions" ON personal_finance.transactions;
-CREATE POLICY "Users can manage own transactions"
+CREATE POLICY "Strict: Users can manage own transactions"
     ON personal_finance.transactions
     FOR ALL
-    USING (user_id IS NULL OR user_id = auth.uid() OR auth.uid() IS NULL)
-    WITH CHECK (user_id IS NULL OR user_id = auth.uid() OR auth.uid() IS NULL);
+    TO authenticated
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
 
 -- Budgets Policies
 DROP POLICY IF EXISTS "Users can manage own budgets" ON personal_finance.budgets;
-CREATE POLICY "Users can manage own budgets"
+CREATE POLICY "Strict: Users can manage own budgets"
     ON personal_finance.budgets
     FOR ALL
-    USING (user_id IS NULL OR user_id = auth.uid() OR auth.uid() IS NULL)
-    WITH CHECK (user_id IS NULL OR user_id = auth.uid() OR auth.uid() IS NULL);
+    TO authenticated
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
 
 -- Split Bills Policies
 DROP POLICY IF EXISTS "Users can manage own split bills" ON personal_finance.split_bills;
-CREATE POLICY "Users can manage own split bills"
+CREATE POLICY "Strict: Bill owners have full access"
     ON personal_finance.split_bills
     FOR ALL
-    USING (user_id IS NULL OR user_id = auth.uid() OR auth.uid() IS NULL)
-    WITH CHECK (user_id IS NULL OR user_id = auth.uid() OR auth.uid() IS NULL);
+    TO authenticated
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Strict: Participants can view shared split bills"
+    ON personal_finance.split_bills
+    FOR SELECT
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM personal_finance.split_bill_participants sbp
+            WHERE sbp.bill_id = personal_finance.split_bills.id
+            AND lower(sbp.email) = lower(coalesce(auth.jwt()->>'email', ''))
+        )
+    );
 
 -- Split Bill Participants Policies
 DROP POLICY IF EXISTS "Users can manage split bill participants" ON personal_finance.split_bill_participants;
-CREATE POLICY "Users can manage split bill participants"
+CREATE POLICY "Strict: Manage participants of own bills"
     ON personal_finance.split_bill_participants
     FOR ALL
+    TO authenticated
     USING (
         EXISTS (
             SELECT 1 FROM personal_finance.split_bills sb
             WHERE sb.id = split_bill_participants.bill_id
-            AND (sb.user_id IS NULL OR sb.user_id = auth.uid() OR auth.uid() IS NULL)
+            AND sb.user_id = auth.uid()
         )
     )
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM personal_finance.split_bills sb
             WHERE sb.id = split_bill_participants.bill_id
-            AND (sb.user_id IS NULL OR sb.user_id = auth.uid() OR auth.uid() IS NULL)
+            AND sb.user_id = auth.uid()
         )
+    );
+
+CREATE POLICY "Strict: Participants can view and update own settlement status"
+    ON personal_finance.split_bill_participants
+    FOR SELECT
+    TO authenticated
+    USING (
+        lower(email) = lower(coalesce(auth.jwt()->>'email', ''))
+    );
+
+CREATE POLICY "Strict: Participants can update own settlement"
+    ON personal_finance.split_bill_participants
+    FOR UPDATE
+    TO authenticated
+    USING (
+        lower(email) = lower(coalesce(auth.jwt()->>'email', ''))
+    )
+    WITH CHECK (
+        lower(email) = lower(coalesce(auth.jwt()->>'email', ''))
     );
 
 -- Split Bill Items Policies
 DROP POLICY IF EXISTS "Users can manage split bill items" ON personal_finance.split_bill_items;
-CREATE POLICY "Users can manage split bill items"
+CREATE POLICY "Strict: Manage items of own bills"
     ON personal_finance.split_bill_items
     FOR ALL
+    TO authenticated
     USING (
         EXISTS (
             SELECT 1 FROM personal_finance.split_bills sb
             WHERE sb.id = split_bill_items.bill_id
-            AND (sb.user_id IS NULL OR sb.user_id = auth.uid() OR auth.uid() IS NULL)
+            AND sb.user_id = auth.uid()
         )
     )
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM personal_finance.split_bills sb
             WHERE sb.id = split_bill_items.bill_id
-            AND (sb.user_id IS NULL OR sb.user_id = auth.uid() OR auth.uid() IS NULL)
+            AND sb.user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Strict: Participants can view items of shared bills"
+    ON personal_finance.split_bill_items
+    FOR SELECT
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM personal_finance.split_bill_participants sbp
+            WHERE sbp.bill_id = split_bill_items.bill_id
+            AND lower(sbp.email) = lower(coalesce(auth.jwt()->>'email', ''))
         )
     );
 

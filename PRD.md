@@ -37,5 +37,13 @@ A modern, intuitive personal finance and wealth management dashboard designed fo
 - Currency preferences, default views, notification settings.
 - Category & tag management.
 
+### 2.7 Split Bill & Group Expenses (`/dashboard/split-bills`)
+- Split group expenses across dinner, rent, utilities, and trips.
+- Support 5 split methods: Equal, Exact amounts, Percentage shares, Proportional ratio/shares, and Itemized receipt breakdown with proportional tax & tip.
+- Track receivables ("You are owed") and payables ("You owe") with interactive settlement toggles.
+- Optional automatic transaction logging for fronted bills (expenses) and settlement reimbursements (income).
+- Copy formatted chat summaries for WhatsApp/Telegram/iMessage, view QR code payment helper, and export split records to Excel (`.xlsx`).
+
 ## 3. Design System & Coding Standards
 - Complies with `AGENTS.md`: URL state (`nuqs`), true browser back navigation (`useGoBack`), `PageShell`, `Heading`, `DataTable`, `Buttons`, and design system tokens.
+

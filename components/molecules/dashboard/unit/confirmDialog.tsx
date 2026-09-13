@@ -95,8 +95,8 @@ function ConfirmDialogBody({
                 </p>
             )}
 
-            <div className="mt-5 flex items-center justify-end gap-2">
-                <Buttons style="second" onClick={onCancel} disabled={isPending}>
+            <div className="mt-5 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2">
+                <Buttons style="second" onClick={onCancel} disabled={isPending} className="w-full sm:w-auto">
                     {cancelLabel}
                 </Buttons>
                 <Buttons
@@ -104,6 +104,7 @@ function ConfirmDialogBody({
                     onClick={() => void onConfirm()}
                     loading={isPending}
                     disabled={!typedOk}
+                    className="w-full sm:w-auto"
                 >
                     {confirmLabel}
                 </Buttons>

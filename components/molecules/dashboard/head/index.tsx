@@ -56,7 +56,7 @@ export function Heading({
                 )}
                 <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                        <h1 className="font-display text-2xl font-medium text-xenia-ink-900">
+                        <h1 className="font-display text-xl sm:text-2xl font-medium text-xenia-ink-900">
                             {title}
                         </h1>
                         {badge}
@@ -64,7 +64,7 @@ export function Heading({
                     {subtitle && <p className="mt-1 text-sm text-xenia-stone-500">{subtitle}</p>}
                 </div>
             </div>
-            {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+            {actions && <div className="flex w-full sm:w-auto shrink-0 flex-wrap items-center gap-2">{actions}</div>}
         </div>
     );
 }

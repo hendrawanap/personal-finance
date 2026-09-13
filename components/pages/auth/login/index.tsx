@@ -52,7 +52,7 @@ export default function LoginPage() {
       <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-[#B4884F] opacity-30 blur-[120px]" />
       <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-[#4F6B52] opacity-30 blur-[100px]" />
 
-      <div className="relative w-full max-w-md backdrop-blur-2xl bg-[#F8F4E9]/85 border border-white/50 rounded-3xl shadow-2xl shadow-black/30 p-6 sm:p-8 md:p-10">
+      <div className="relative w-full max-w-md backdrop-blur-2xl bg-[#F8F4E9]/85 border border-white/50 rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/30 p-5 sm:p-8 md:p-10">
         {/* Brand identity */}
         <div className="flex flex-col items-center mb-6 sm:mb-8">
           <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-[#4F6B52] text-[#F2ECDD] shadow-lg shadow-[#4F6B52]/30 mb-3">

@@ -229,7 +229,7 @@ export function FormFooter({ start, children, sticky = false, className }: FormF
             className={cn(
                 "flex items-center justify-between gap-3",
                 sticky &&
-                    "sticky bottom-0 -mx-6 -mb-6 mt-2 border-t border-xenia-border bg-xenia-canvas/95 px-6 py-3 backdrop-blur",
+                    "sticky bottom-0 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 mt-2 border-t border-xenia-border bg-xenia-canvas/95 px-4 sm:px-6 py-3 backdrop-blur",
                 className,
             )}
         >

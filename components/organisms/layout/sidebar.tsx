@@ -3,6 +3,7 @@ import { Selects } from "@/components/atoms/selects";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLogout } from "@/hooks/mutation/auth/useLogout";
 import { useAccountFilterStore } from "@/store/useAccountFilterStore";
+import { useFinanceStore } from "@/store/useFinanceStore";
 import {
   ArrowDown01Icon,
   Cancel01Icon,
@@ -11,7 +12,7 @@ import {
 } from "hugeicons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 interface sidebarProps {
   sidebarOpen: boolean;
@@ -50,7 +51,27 @@ export default function Sidebar({ sidebarOpen, onClose }: sidebarProps) {
   const selectedAccountId = useAccountFilterStore((s) => s.selectedAccountId);
   const setSelectedAccountId = useAccountFilterStore((s) => s.setSelectedAccountId);
 
+  const storeAccounts = useFinanceStore((s) => s.accounts);
+  const storeProfile = useFinanceStore((s) => s.profile);
+
+  const accountOptions = useMemo(
+    () => [
+      { value: "all", label: "All Accounts" },
+      ...storeAccounts.map((acc) => ({
+        value: acc.id,
+        label: `${acc.name} (${acc.institution})`,
+      })),
+    ],
+    [storeAccounts],
+  );
+
   const handleLogout = useLogout();
+
+  const handleNavClick = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      onClose();
+    }
+  };
 
   return (
     <aside
@@ -87,7 +108,7 @@ export default function Sidebar({ sidebarOpen, onClose }: sidebarProps) {
           {/* Welcome */}
           <div className="mt-8 px-1">
             <p className="font-display text-xl leading-tight font-medium text-[#F2ECDD]">
-              Welcome, <span className="text-[#B4884F]">{profile?.name ?? "User"}</span>
+              Welcome, <span className="text-[#B4884F]">{storeProfile?.name || profile?.name || "User"}</span>
             </p>
             <p className="mt-1 text-xs text-[#7C9878]">
               Your financial health & overview
@@ -104,13 +125,7 @@ export default function Sidebar({ sidebarOpen, onClose }: sidebarProps) {
               onChange={setSelectedAccountId}
               variant="dark"
               className="mt-2"
-              options={[
-                { value: "all", label: "All Accounts" },
-                { value: "checking", label: "Checking Account" },
-                { value: "savings", label: "Savings Account" },
-                { value: "credit-card", label: "Credit Card" },
-                { value: "investments", label: "Investment Portfolio" },
-              ]}
+              options={accountOptions}
             />
           </div>
         </div>
@@ -141,6 +156,7 @@ export default function Sidebar({ sidebarOpen, onClose }: sidebarProps) {
                     <Link
                       key={entry.label}
                       href={entry.href}
+                      onClick={handleNavClick}
                       className={`group relative flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                         isActive
                           ? "bg-[#24382B] text-[#F2ECDD]"
@@ -215,6 +231,7 @@ export default function Sidebar({ sidebarOpen, onClose }: sidebarProps) {
                             <Link
                               key={child.label}
                               href={child.href}
+                              onClick={handleNavClick}
                               className={`group relative flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                                 isActive
                                   ? "bg-[#24382B] text-[#F2ECDD]"

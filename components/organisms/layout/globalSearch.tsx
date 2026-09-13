@@ -76,13 +76,16 @@ export default function GlobalSearch({ open, onClose }: Props) {
       bare
       bodyClassName="flex flex-col"
       initialFocusRef={inputRef}
-      className="max-h-[70vh]"
+      className="max-h-[85dvh] sm:max-h-[70vh]"
       footer={
         <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-xenia-stone-500">
-          <Hint keys="↑ ↓" label="navigate" />
-          <Hint keys="↵" label="open" />
-          <Hint keys="esc" label="close" />
-          <span className="ml-auto hidden sm:inline">
+          <div className="hidden sm:flex items-center gap-x-4">
+            <Hint keys="↑ ↓" label="navigate" />
+            <Hint keys="↵" label="open" />
+            <Hint keys="esc" label="close" />
+          </div>
+          <span className="sm:hidden text-xenia-stone-400">Tap to select page</span>
+          <span className="ml-auto">
             Only pages you have access to
           </span>
         </div>
@@ -202,7 +205,7 @@ function SearchPanel({
 
   return (
     <>
-      <div className="flex shrink-0 items-center gap-3 border-b border-xenia-divider px-5 py-4">
+      <div className="flex shrink-0 items-center gap-3 border-b border-xenia-divider px-4 py-3 sm:px-5 sm:py-4">
         <Search01Icon
           size={18}
           strokeWidth={1.75}
@@ -216,7 +219,7 @@ function SearchPanel({
             setActiveIndex(0);
           }}
           onKeyDown={onKeyDown}
-          placeholder="Search pages — try “room”, “deals”, “audit”"
+          placeholder="Search pages — try “transactions”, “budgets”, “accounts”, “analytics”"
           aria-label="Search pages"
           role="combobox"
           aria-expanded
@@ -226,7 +229,7 @@ function SearchPanel({
           }
           autoComplete="off"
           spellCheck={false}
-          className="w-full bg-transparent text-base text-xenia-ink-900 outline-none placeholder:text-xenia-stone-400"
+          className="w-full bg-transparent text-sm sm:text-base text-xenia-ink-900 outline-none placeholder:text-xenia-stone-400"
         />
       </div>
 

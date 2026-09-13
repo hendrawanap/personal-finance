@@ -39,7 +39,7 @@ export function PageShell({
     spacing = "md",
 }: PageShellProps) {
     return (
-        <main className="flex-1 bg-xenia-canvas p-6">
+        <main className="flex-1 bg-xenia-canvas p-4 sm:p-6">
             <div className={cn("mx-auto w-full", WIDTH[width], SPACING[spacing], className)}>
                 {children}
             </div>

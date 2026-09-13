@@ -1,0 +1,515 @@
+{
+  "state": {
+    "accounts": [
+      {
+        "name": "BCA",
+        "institution": "BCA",
+        "type": "checking",
+        "accountNumber": "•••• 2904",
+        "balance": -105600,
+        "currency": "IDR",
+        "accent": "moss",
+        "id": "acc-1789284071843-0uzy",
+        "createdAt": "2026-09-13T07:21:11.843Z",
+        "updatedAt": "2026-09-13T10:02:43.105Z"
+      }
+    ],
+    "transactions": [
+      {
+        "id": "tx-1789293763105-asnj",
+        "date": "2026-09-13",
+        "description": "Split Bill: Rocket",
+        "category": "Dining Out & Entertainment",
+        "accountId": "acc-1789284071843-0uzy",
+        "amount": 32000,
+        "type": "expense",
+        "status": "paid",
+        "notes": "Fronted bill for 2 participants",
+        "createdAt": "2026-09-13T10:02:43.105Z"
+      },
+      {
+        "id": "tx-1789289954592-41mn",
+        "date": "2026-09-13",
+        "description": "Split Bill: Rocket",
+        "category": "Dining Out & Entertainment",
+        "accountId": "acc-1789284071843-0uzy",
+        "amount": 32000,
+        "type": "expense",
+        "status": "paid",
+        "notes": "Fronted bill for 2 participants",
+        "createdAt": "2026-09-13T08:59:14.592Z"
+      },
+      {
+        "id": "tx-1789289778208-czje",
+        "date": "2026-09-13",
+        "description": "Split Bill: Tomoro",
+        "category": "Dining Out & Entertainment",
+        "accountId": "acc-1789284071843-0uzy",
+        "amount": 41600,
+        "type": "expense",
+        "status": "paid",
+        "notes": "Fronted bill for 2 participants",
+        "createdAt": "2026-09-13T08:56:18.208Z"
+      }
+    ],
+    "budgets": [],
+    "splitBills": [
+      {
+        "title": "Rocket",
+        "date": "2026-09-13",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 32000,
+        "paidBy": "Hendra",
+        "paidByCurrentUser": true,
+        "payerAccountId": "acc-1789284071843-0uzy",
+        "splitMethod": "equal",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 16000,
+            "status": "paid",
+            "settledAt": "2026-09-13T10:02:43.105Z"
+          },
+          {
+            "id": "p-1789293752979-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 16000,
+            "status": "unpaid"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789293763105-fue9",
+        "linkedTransactionId": "tx-1789293763105-asnj",
+        "createdAt": "2026-09-13T10:02:43.105Z"
+      },
+      {
+        "title": "Beras",
+        "date": "2026-09-10",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 74500,
+        "paidBy": "Hendra",
+        "paidByCurrentUser": true,
+        "payerAccountId": "acc-1789284071843-0uzy",
+        "splitMethod": "equal",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 37250,
+            "status": "paid",
+            "settledAt": "2026-09-13T10:00:52.244Z"
+          },
+          {
+            "id": "p-1789293615140-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 37250,
+            "status": "unpaid"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789293652244-wvmy",
+        "createdAt": "2026-09-13T10:00:52.244Z",
+        "updatedAt": "2026-09-13T10:03:04.931Z"
+      },
+      {
+        "title": "Sate",
+        "date": "2026-09-10",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 36000,
+        "paidBy": "Hendra",
+        "paidByCurrentUser": true,
+        "payerAccountId": "acc-1789284071843-0uzy",
+        "splitMethod": "equal",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 18000,
+            "status": "paid",
+            "settledAt": "2026-09-13T10:00:07.574Z"
+          },
+          {
+            "id": "p-1789293599166-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 18000,
+            "status": "unpaid"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789293607574-dsb4",
+        "createdAt": "2026-09-13T10:00:07.574Z",
+        "updatedAt": "2026-09-13T10:03:12.539Z"
+      },
+      {
+        "title": "Mie Ayam",
+        "date": "2026-09-12",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 18000,
+        "paidBy": "Wawa",
+        "paidByCurrentUser": false,
+        "splitMethod": "equal",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 9000,
+            "status": "unpaid"
+          },
+          {
+            "id": "p-1789293561416-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 9000,
+            "status": "paid",
+            "settledAt": "2026-09-13T09:59:33.837Z"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789293573837-iuvr",
+        "createdAt": "2026-09-13T09:59:33.837Z",
+        "updatedAt": "2026-09-13T10:03:19.058Z"
+      },
+      {
+        "title": "Telur",
+        "date": "2026-09-12",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 28000,
+        "paidBy": "Hendra",
+        "paidByCurrentUser": true,
+        "payerAccountId": "acc-1789284071843-0uzy",
+        "splitMethod": "equal",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 14000,
+            "status": "paid",
+            "settledAt": "2026-09-13T09:59:15.091Z"
+          },
+          {
+            "id": "p-1789293543742-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 14000,
+            "status": "unpaid"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789293555091-u4aj",
+        "createdAt": "2026-09-13T09:59:15.091Z",
+        "updatedAt": "2026-09-13T10:03:24.996Z"
+      },
+      {
+        "title": "Indomaret",
+        "date": "2026-09-12",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 45250,
+        "paidBy": "Hendra",
+        "paidByCurrentUser": true,
+        "payerAccountId": "acc-1789284071843-0uzy",
+        "splitMethod": "exact",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 0,
+            "status": "paid",
+            "settledAt": "2026-09-13T09:58:57.400Z"
+          },
+          {
+            "id": "p-1789293501485-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 45250,
+            "status": "unpaid"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789293537400-519g",
+        "createdAt": "2026-09-13T09:58:57.400Z",
+        "updatedAt": "2026-09-13T10:03:30.965Z"
+      },
+      {
+        "title": "Soto",
+        "date": "2026-09-12",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 20000,
+        "paidBy": "Hendra",
+        "paidByCurrentUser": true,
+        "payerAccountId": "acc-1789284071843-0uzy",
+        "splitMethod": "equal",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 10000,
+            "status": "paid",
+            "settledAt": "2026-09-13T09:58:20.046Z"
+          },
+          {
+            "id": "p-1789293487188-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 10000,
+            "status": "unpaid"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789293500046-uyfg",
+        "createdAt": "2026-09-13T09:58:20.046Z",
+        "updatedAt": "2026-09-13T10:03:36.907Z"
+      },
+      {
+        "title": "Gorengan Cak Nono",
+        "date": "2026-09-12",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 8000,
+        "paidBy": "Hendra",
+        "paidByCurrentUser": true,
+        "payerAccountId": "acc-1789284071843-0uzy",
+        "splitMethod": "equal",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 4000,
+            "status": "paid",
+            "settledAt": "2026-09-13T09:57:26.771Z"
+          },
+          {
+            "id": "p-1789293426108-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 4000,
+            "status": "unpaid"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789293446771-mwmj",
+        "createdAt": "2026-09-13T09:57:26.771Z",
+        "updatedAt": "2026-09-13T10:03:42.080Z"
+      },
+      {
+        "title": "Rujak",
+        "date": "2026-09-08",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 32000,
+        "paidBy": "Hendra",
+        "paidByCurrentUser": true,
+        "payerAccountId": "acc-1789284071843-0uzy",
+        "splitMethod": "equal",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 16000,
+            "status": "paid",
+            "settledAt": "2026-09-13T09:57:04.463Z"
+          },
+          {
+            "id": "p-1789293412980-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 16000,
+            "status": "unpaid"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789293424463-scnv",
+        "createdAt": "2026-09-13T09:57:04.463Z",
+        "updatedAt": "2026-09-13T10:03:55.599Z"
+      },
+      {
+        "title": "WSS",
+        "date": "2026-09-09",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 100000,
+        "paidBy": "Hendra",
+        "paidByCurrentUser": true,
+        "payerAccountId": "acc-1789284071843-0uzy",
+        "splitMethod": "exact",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 43500,
+            "status": "paid",
+            "settledAt": "2026-09-13T09:05:15.661Z"
+          },
+          {
+            "id": "p-1789290230064-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 56500,
+            "status": "unpaid"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789290315661-2tw5",
+        "createdAt": "2026-09-13T09:05:15.661Z",
+        "updatedAt": "2026-09-13T10:04:11.113Z"
+      },
+      {
+        "title": "Po kang",
+        "date": "2026-09-08",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 28000,
+        "paidBy": "Hendra",
+        "paidByCurrentUser": true,
+        "payerAccountId": "acc-1789284071843-0uzy",
+        "splitMethod": "equal",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 14000,
+            "status": "paid",
+            "settledAt": "2026-09-13T09:01:46.938Z"
+          },
+          {
+            "id": "p-1789289994714-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 14000,
+            "status": "unpaid"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789290106938-v9ah",
+        "createdAt": "2026-09-13T09:01:46.938Z",
+        "updatedAt": "2026-09-13T10:29:29.252Z"
+      },
+      {
+        "title": "Rocket",
+        "date": "2026-09-07",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 32000,
+        "paidBy": "Hendra",
+        "paidByCurrentUser": true,
+        "payerAccountId": "acc-1789284071843-0uzy",
+        "splitMethod": "equal",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 16000,
+            "status": "paid",
+            "settledAt": "2026-09-13T08:59:14.592Z"
+          },
+          {
+            "id": "p-1789289939548-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 16000,
+            "status": "unpaid"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789289954592-2tmp",
+        "linkedTransactionId": "tx-1789289954592-41mn",
+        "createdAt": "2026-09-13T08:59:14.592Z",
+        "updatedAt": "2026-09-13T10:30:44.420Z"
+      },
+      {
+        "title": "Tomoro",
+        "date": "2026-09-08",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 41600,
+        "paidBy": "Wawa",
+        "paidByCurrentUser": false,
+        "splitMethod": "equal",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 20800,
+            "status": "unpaid"
+          },
+          {
+            "id": "p-1789289876960-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 20800,
+            "status": "paid",
+            "settledAt": "2026-09-13T08:58:10.483Z"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789289890483-4npo",
+        "createdAt": "2026-09-13T08:58:10.483Z",
+        "updatedAt": "2026-09-13T10:30:58.980Z"
+      },
+      {
+        "title": "Nina Rasa",
+        "date": "2026-09-06",
+        "category": "Dining Out & Entertainment",
+        "totalAmount": 34000,
+        "paidBy": "Hendra",
+        "paidByCurrentUser": true,
+        "payerAccountId": "acc-1789284071843-0uzy",
+        "splitMethod": "equal",
+        "participants": [
+          {
+            "id": "p-me",
+            "name": "Hendra",
+            "email": "hendra@mail.com",
+            "isCurrentUser": true,
+            "shareAmount": 17000,
+            "status": "paid",
+            "settledAt": "2026-09-13T08:55:30.587Z"
+          },
+          {
+            "id": "p-1789289693396-1",
+            "name": "Wawa",
+            "isCurrentUser": false,
+            "shareAmount": 17000,
+            "status": "unpaid"
+          }
+        ],
+        "status": "pending",
+        "id": "sb-1789289730587-icu9",
+        "createdAt": "2026-09-13T08:55:30.587Z",
+        "updatedAt": "2026-09-13T10:31:07.903Z"
+      }
+    ],
+    "profile": {
+      "name": "Hendra",
+      "email": "hendra@mail.com",
+      "currencySymbol": "Rp",
+      "currencyCode": "IDR",
+      "monthlySavingsTarget": 3000
+    },
+    "_hasHydrated": true
+  },
+  "version": 0
+}

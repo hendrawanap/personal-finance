@@ -94,7 +94,7 @@ export function StatCard({
         <div className="flex flex-wrap items-baseline gap-2">
           <span
             className={cn(
-              "font-display text-3xl font-medium tracking-tight",
+              "font-display text-2xl sm:text-3xl font-medium tracking-tight tabular-nums break-words",
               valueAccent ? ACCENT_TEXT[valueAccent] : "text-xenia-ink-900",
             )}
           >
@@ -121,7 +121,7 @@ export function StatCard({
     </>
   );
 
-  const base = "flex flex-col justify-between rounded-2xl border border-xenia-border bg-white p-5 shadow-sm";
+  const base = "flex flex-col justify-between rounded-2xl border border-xenia-border bg-white p-4 sm:p-5 shadow-sm";
 
   if (href) {
     return (

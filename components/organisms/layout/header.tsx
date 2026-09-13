@@ -5,6 +5,7 @@ import { Cancel01Icon, Menu01Icon, PanelLeftCloseIcon, PanelLeftOpenIcon, Search
 
 import GlobalSearch from '@/components/organisms/layout/globalSearch'
 import { useProfile } from '@/hooks/query/auth/profile';
+import { useFinanceStore } from '@/store/useFinanceStore';
 
 interface HeaderProps {
     setSidebarOpen: (value: boolean) => void;
@@ -65,9 +66,10 @@ function getInitials(name: string): string {
 
 export default function Header({
     setSidebarOpen,
-    sidebarOpen
+    sidebarOpen,
 }: HeaderProps) {
     const { data: profile, isLoading } = useProfile()
+    const storeProfile = useFinanceStore((s) => s.profile)
 
     const [searchOpen, setSearchOpen] = useState(false)
     const openSearch = useCallback(() => setSearchOpen(true), [])
@@ -83,7 +85,7 @@ export default function Header({
 
     return (
         <>
-        <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-[#E2D9C2] bg-[#F2ECDD]/90 px-6 py-4 backdrop-blur">
+        <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-[#E2D9C2] bg-[#F2ECDD]/90 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur">
             <button
                 type="button"
                 onClick={toggleSidebar}
@@ -139,14 +141,14 @@ export default function Header({
                     ) : (
                         <>
                             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E4E9DC] text-xs font-semibold text-[#4F6B52] ring-2 ring-[#B4884F]/40">
-                                {profile ? getInitials(profile.name) : '?'}
+                                {getInitials(storeProfile?.name || profile?.name || 'User')}
                             </div>
                             <div className="hidden text-left text-xs leading-tight sm:block">
                                 <p className="font-medium text-[#1D1B16]">
-                                    {profile?.name ?? 'Guest'}
+                                    {storeProfile?.name || profile?.name || 'User'}
                                 </p>
                                 <p className="text-[#8A8271]">
-                                    {profile?.email ?? '-'}
+                                    {storeProfile?.email || profile?.email || 'alex.morgan@finance.io'}
                                 </p>
                             </div>
                         </>

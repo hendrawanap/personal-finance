@@ -130,8 +130,8 @@ export function DialogShell({
     return createPortal(
         <div
             className={cn(
-                "fixed inset-0 z-[60] flex justify-center p-4",
-                align === "top" ? "items-start pt-[12vh]" : "items-center",
+                "fixed inset-0 z-[60] flex justify-center p-3 sm:p-4",
+                align === "top" ? "items-start pt-4 sm:pt-[12vh]" : "items-center",
             )}
         >
             <div
@@ -146,13 +146,13 @@ export function DialogShell({
                 aria-label={title}
                 tabIndex={-1}
                 className={cn(
-                    "relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl border border-xenia-border bg-white shadow-2xl outline-none",
+                    "relative flex max-h-[92dvh] sm:max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl border border-xenia-border bg-white shadow-2xl outline-none",
                     SIZE[size],
                     className,
                 )}
             >
                 {!hideHeader && (title || description) && (
-                    <div className="flex items-start justify-between gap-4 border-b border-xenia-divider px-5 py-4">
+                    <div className="flex items-start justify-between gap-4 border-b border-xenia-divider px-4 py-3.5 sm:px-5 sm:py-4">
                         <div className="min-w-0">
                             {title && (
                                 <h2 className="font-display text-lg font-medium text-xenia-ink-900">{title}</h2>
@@ -177,7 +177,7 @@ export function DialogShell({
                     ref={bodyRef}
                     className={cn(
                         "min-h-0 flex-1",
-                        bare ? "overflow-hidden" : "overflow-y-auto px-5 py-4",
+                        bare ? "overflow-hidden" : "overflow-y-auto px-4 py-3.5 sm:px-5 sm:py-4",
                         bodyClassName,
                     )}
                 >
@@ -185,7 +185,7 @@ export function DialogShell({
                 </div>
 
                 {footer && (
-                    <div className="flex items-center justify-end gap-2 border-t border-xenia-divider bg-xenia-cream px-5 py-3">
+                    <div className="flex items-center justify-end gap-2 border-t border-xenia-divider bg-xenia-cream px-4 py-2.5 sm:px-5 sm:py-3">
                         {footer}
                     </div>
                 )}

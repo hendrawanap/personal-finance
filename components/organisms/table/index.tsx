@@ -168,6 +168,13 @@ export default function DataTable<TData>({
     [enableSorting, sorting, globalFilter, paginationProp, getSubRows, expanded],
   )
 
+  const effectivePageSize = paginationProp?.pageSize ?? pageSize
+  const computedPageCount =
+    pageCount ??
+    (totalItems !== undefined && effectivePageSize && effectivePageSize > 0
+      ? Math.max(1, Math.ceil(totalItems / effectivePageSize))
+      : undefined)
+
   const table = useReactTable({
     data,
     columns,
@@ -176,7 +183,8 @@ export default function DataTable<TData>({
     onSortingChange: handleSortingChange,
     onPaginationChange,
     manualPagination,
-    pageCount,
+    pageCount: computedPageCount,
+    autoResetPageIndex: false,
     manualSorting,
     onGlobalFilterChange,
     getCoreRowModel: coreRowModel,
@@ -395,8 +403,17 @@ export default function DataTable<TData>({
       {pageSize || paginationProp ? (
         <Pagination
           page={table.getState().pagination.pageIndex + 1}
-          pageCount={table.getPageCount()}
-          onPageChange={(p) => table.setPageIndex(p - 1)}
+          pageCount={computedPageCount ?? table.getPageCount()}
+          onPageChange={(p) => {
+            if (onPaginationChange) {
+              onPaginationChange({
+                pageIndex: p - 1,
+                pageSize: table.getState().pagination.pageSize,
+              })
+            } else {
+              table.setPageIndex(p - 1)
+            }
+          }}
           totalItems={totalItems}
           pageSize={table.getState().pagination.pageSize}
           className="border-t border-xenia-divider px-5 py-3"

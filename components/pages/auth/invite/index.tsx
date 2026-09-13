@@ -34,7 +34,7 @@ function InviteContent() {
 
         <div className="overflow-hidden rounded-2xl border border-xenia-border bg-white shadow-[0_1px_2px_rgba(20,28,22,0.04),0_20px_44px_-28px_rgba(20,28,22,0.35)]">
           <div className="h-1 w-full bg-gradient-to-r from-xenia-moss-600 via-[#8CA87C] to-[#D6E0D3]" />
-          <div className="p-8">
+          <div className="p-5 sm:p-8">
             {!token ? (
               <Missing />
             ) : isPending ? (
@@ -135,7 +135,12 @@ function Valid({
       </ul>
 
       <div className="mt-6">
-        <Buttons type="button" style="main" onClick={onContinue}>
+        <Buttons
+          type="button"
+          style="main"
+          onClick={onContinue}
+          className="w-full justify-center"
+        >
           Set my password
         </Buttons>
       </div>
@@ -166,7 +171,7 @@ function Expired() {
       </div>
 
       <div className="mt-6 flex justify-center">
-        <Links path="/login" style="second">
+        <Links path="/login" style="second" className="w-full sm:w-auto justify-center">
           Go to sign in
         </Links>
       </div>
@@ -193,7 +198,7 @@ function Missing() {
       </p>
 
       <div className="mt-6 flex justify-center">
-        <Links path="/login" style="second">
+        <Links path="/login" style="second" className="w-full sm:w-auto justify-center">
           Go to sign in
         </Links>
       </div>

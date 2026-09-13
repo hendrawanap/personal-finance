@@ -82,7 +82,7 @@ export function useDataTableUrlProps(
   )
 
   const pagination = useMemo<PaginationState>(
-    () => ({ pageIndex: Math.max(0, page - 1), pageSize }),
+    () => ({ pageIndex: Math.max(0, (page || 1) - 1), pageSize }),
     [page, pageSize],
   )
 

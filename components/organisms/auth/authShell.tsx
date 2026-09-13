@@ -26,7 +26,7 @@ export function AuthShell({
             <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-[#B4884F] opacity-30 blur-[120px]" />
             <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-[#4F6B52] opacity-30 blur-[100px]" />
 
-            <div className="relative w-full max-w-md rounded-3xl border border-white/50 bg-[#F8F4E9]/85 p-6 shadow-2xl shadow-black/30 backdrop-blur-2xl sm:p-8 md:p-10">
+            <div className="relative w-full max-w-md rounded-2xl sm:rounded-3xl border border-white/50 bg-[#F8F4E9]/85 p-5 sm:p-8 md:p-10 shadow-2xl shadow-black/30 backdrop-blur-2xl">
                 <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
                     <div className="relative mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#4F6B52] text-[#F2ECDD] shadow-lg shadow-[#4F6B52]/30">
                         <div className="absolute inset-0 rounded-xl bg-[#B4884F] opacity-25 blur-[8px]" />

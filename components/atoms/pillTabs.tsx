@@ -42,7 +42,7 @@ export function PillTabs<T extends string>({
             role="tablist"
             aria-label={rest["aria-label"]}
             className={cn(
-                "inline-flex items-center w-fit max-w-full self-start rounded-lg bg-xenia-sand-100 p-0.5 text-xenia-stone-700",
+                "inline-flex items-center w-fit max-w-full self-start rounded-lg bg-xenia-sand-100 p-0.5 text-xenia-stone-700 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0",
                 className
             )}
         >
@@ -57,7 +57,7 @@ export function PillTabs<T extends string>({
                         disabled={opt.disabled}
                         onClick={() => onChange(opt.value)}
                         className={cn(
-                            "inline-flex items-center gap-1.5 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-xenia-moss-600/40 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
+                            "inline-flex items-center gap-1.5 rounded-md font-medium shrink-0 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-xenia-moss-600/40 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
                             size === "sm" ? "px-3 py-1.5 text-xs" : "px-3.5 py-2 text-sm",
                             active
                                 ? "bg-xenia-moss-600 text-white shadow-sm"

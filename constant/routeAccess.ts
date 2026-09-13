@@ -7,8 +7,7 @@ import {
   ChartLineData02Icon,
   Analytics01Icon,
   Settings01Icon,
-  UserGroupIcon,
-  PreferenceHorizontalIcon,
+  ReceiptDollarIcon,
 } from "hugeicons-react";
 
 import type { Permission } from "@/types/auth/permission.type";
@@ -63,6 +62,26 @@ export const ROUTE_ACCESS: readonly RouteAccess[] = [
     nav: { label: "Budgets", icon: Coins01Icon, group: "finance" },
     search: { keywords: ["limits", "savings", "planning", "categories"] },
   },
+  {
+    pattern: "/dashboard/split-bills",
+    permission: [],
+    nav: { label: "Split Bills", icon: ReceiptDollarIcon, group: "finance" },
+    search: {
+      title: "Split Bills & Group Expenses",
+      keywords: [
+        "split",
+        "bills",
+        "divide",
+        "share",
+        "reimbursement",
+        "owe",
+        "owed",
+        "friends",
+        "group expense",
+        "settle",
+      ],
+    },
+  },
 
   // ── Insights Group ──
   {
@@ -77,31 +96,19 @@ export const ROUTE_ACCESS: readonly RouteAccess[] = [
     pattern: "/dashboard/settings",
     permission: [],
     nav: { label: "Settings", icon: Settings01Icon, group: "system" },
-    search: { keywords: ["preferences", "configuration"] },
-  },
-  {
-    pattern: "/dashboard/settings/user",
-    permission: ["users:read"],
-    card: {
-      title: "User Management",
-      description: "Manage dashboard users, roles, and invitation status.",
-      icon: UserGroupIcon,
+    search: {
+      title: "Settings & Local Storage",
+      keywords: [
+        "preferences",
+        "configuration",
+        "currency",
+        "profile",
+        "backup",
+        "export",
+        "import",
+        "storage",
+        "reset",
+      ],
     },
-    search: { keywords: ["team", "members", "accounts"] },
-  },
-  {
-    pattern: "/dashboard/settings/user/invite",
-    permission: ["users:invite"],
-    search: { title: "Invite User", keywords: ["new user", "add member"] },
-  },
-  {
-    pattern: "/dashboard/settings/roles",
-    permission: ["roles:read"],
-    card: {
-      title: "Role Management",
-      description: "Configure role permissions and access control.",
-      icon: PreferenceHorizontalIcon,
-    },
-    search: { keywords: ["permissions", "rbac", "access"] },
   },
 ] as const;

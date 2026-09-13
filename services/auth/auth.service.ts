@@ -61,37 +61,7 @@ export async function adminLogin(
   return data;
 }
 
-/**
- * Demo fast login for testing without Supabase or credentials
- */
-export async function demoLogin(): Promise<AdminLoginData> {
-  const financeData = readFinanceDataFromLocalStorage();
-  const user = {
-    id: "usr-demo-local",
-    email: "demo@personalfinance.io",
-    name: financeData.profile.name || "Demo User",
-    roles: ["admin", "superadmin"],
-    permissions: ALL_PERMISSIONS,
-  };
 
-  const data: AdminLoginData = {
-    accessToken: "demo-access-token",
-    refreshToken: "demo-refresh-token",
-    user,
-  };
-
-  if (isBrowser()) {
-    window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-  }
-
-  setCookie("accessToken", data.accessToken, { path: "/" });
-  setCookie("refreshToken", data.refreshToken, { path: "/" });
-
-  // Explicitly load demo sample dataset for demo user
-  useFinanceStore.getState().resetToDefaults();
-
-  return data;
-}
 
 /**
  * Retrieve user profile from Supabase with fallback to local store

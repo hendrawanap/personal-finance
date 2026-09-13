@@ -7,13 +7,69 @@ import {
 } from "@/types/finance";
 
 /**
- * Normalizes participant name for lookup and grouping.
+ * Normalizes participant name/email for lookup and grouping.
+ * If email exists, groups by email; otherwise falls back to name.
  */
-function normalizeKey(name: string, email?: string): string {
+export function normalizeKey(name: string, email?: string): string {
   if (email && email.trim()) {
     return email.trim().toLowerCase();
   }
   return name.trim().toLowerCase();
+}
+
+/**
+ * Matches two participants or participant-like entities.
+ * If either entity has an email, they are matched using email ONLY.
+ * Only if neither entity has an email, they fall back to matching by name.
+ */
+export function matchesParticipant(
+  a: { name: string; email?: string | null; userId?: string | null },
+  b: { name: string; email?: string | null; userId?: string | null },
+): boolean {
+  if (a.userId && b.userId && a.userId === b.userId) {
+    return true;
+  }
+  const emailA = a.email?.trim().toLowerCase();
+  const emailB = b.email?.trim().toLowerCase();
+  if (emailA || emailB) {
+    return Boolean(emailA && emailB && emailA === emailB);
+  }
+  return a.name.trim().toLowerCase() === b.name.trim().toLowerCase();
+}
+
+/**
+ * Matches a bill's payer against a target participant or profile.
+ * Resolves payer email from bill.participants or bill.paidBy.
+ * If either side has an email, they are matched using email ONLY.
+ * Otherwise falls back to matching by name.
+ */
+export function matchesPayer(
+  bill: SplitBill,
+  target: { name: string; email?: string | null; userId?: string | null },
+): boolean {
+  if (bill.paidByCurrentUser && target.userId && bill.userId && bill.userId === target.userId) {
+    return true;
+  }
+
+  const billPaidByStr = bill.paidBy.trim();
+  const payerIsEmail = billPaidByStr.includes("@");
+
+  const payerParticipant = bill.participants.find((p) => {
+    const pEmail = p.email?.trim().toLowerCase();
+    if (pEmail && payerIsEmail) {
+      return pEmail === billPaidByStr.toLowerCase();
+    }
+    return p.name.trim().toLowerCase() === billPaidByStr.toLowerCase();
+  });
+
+  const payerName = payerParticipant?.name || billPaidByStr;
+  const payerEmail = payerParticipant?.email || (payerIsEmail ? billPaidByStr : undefined);
+  const payerUserId = payerParticipant?.userId || (bill.paidByCurrentUser ? bill.userId : undefined);
+
+  return matchesParticipant(
+    { name: payerName, email: payerEmail, userId: payerUserId },
+    target,
+  );
 }
 
 /**
@@ -30,10 +86,12 @@ export function computeParticipantSummaries(
 
   const isCurrent = (name: string, email?: string, isFlag?: boolean): boolean => {
     if (isFlag) return true;
-    if (normCurrentEmail && email && email.trim().toLowerCase() === normCurrentEmail) {
-      return true;
+    const cleanEmail = email?.trim().toLowerCase();
+    // If email exists on either participant or current user, match using email ONLY
+    if (cleanEmail || normCurrentEmail) {
+      return Boolean(cleanEmail && normCurrentEmail && cleanEmail === normCurrentEmail);
     }
-    return name.trim().toLowerCase() === normCurrentName;
+    return Boolean(normCurrentName && name.trim().toLowerCase() === normCurrentName);
   };
 
   const map = new Map<
@@ -70,7 +128,24 @@ export function computeParticipantSummaries(
   };
 
   for (const bill of bills) {
-    const billPaidByMe = bill.paidByCurrentUser || isCurrent(bill.paidBy);
+    const billPaidByStr = bill.paidBy.trim();
+    const payerIsEmail = billPaidByStr.includes("@");
+
+    // Locate payer participant to resolve payer email if available
+    const payerParticipant = bill.participants.find((p) => {
+      const pEmail = p.email?.trim().toLowerCase();
+      if (pEmail && payerIsEmail) {
+        return pEmail === billPaidByStr.toLowerCase();
+      }
+      return p.name.trim().toLowerCase() === billPaidByStr.toLowerCase();
+    });
+    const payerName = payerParticipant?.name || billPaidByStr;
+    const payerEmail = payerParticipant?.email || (payerIsEmail ? billPaidByStr : undefined);
+
+    const billPaidByMe =
+      bill.paidByCurrentUser ||
+      isCurrent(payerName, payerEmail);
+
     const myParticipant = bill.participants.find((p) =>
       isCurrent(p.name, p.email, p.isCurrentUser),
     );
@@ -107,7 +182,7 @@ export function computeParticipantSummaries(
       }
     } else {
       // Someone else fronted the bill
-      const payerEntry = getOrCreate(bill.paidBy);
+      const payerEntry = getOrCreate(payerName, payerEmail);
       payerEntry.billsCountSet.add(bill.id);
 
       if (myParticipant) {
@@ -137,7 +212,7 @@ export function computeParticipantSummaries(
       // Other participants in this bill
       for (const p of bill.participants) {
         if (isCurrent(p.name, p.email, p.isCurrentUser)) continue;
-        if (normalizeKey(p.name, p.email) === normalizeKey(bill.paidBy)) continue;
+        if (normalizeKey(p.name, p.email) === normalizeKey(payerName, payerEmail)) continue;
 
         const entry = getOrCreate(p.name, p.email);
         entry.billsCountSet.add(bill.id);

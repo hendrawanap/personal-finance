@@ -231,7 +231,11 @@ export function splitBillFromRow(
     isFlag?: boolean,
   ): boolean => {
     if (currentUserId && pUserId && pUserId === currentUserId) return true;
-    if (normCurrentEmail && pEmail && pEmail.trim().toLowerCase() === normCurrentEmail) return true;
+    const cleanEmail = pEmail?.trim().toLowerCase();
+    // If email exists on either side, match using email ONLY
+    if (cleanEmail || normCurrentEmail) {
+      return Boolean(cleanEmail && normCurrentEmail && cleanEmail === normCurrentEmail);
+    }
     if (normCurrentName && pName && pName.trim().toLowerCase() === normCurrentName) return true;
     if (currentUserId && row.user_id && row.user_id !== currentUserId) {
       // Viewing a shared bill created by someone else: do not trust creator's is_current_user flag
@@ -240,12 +244,24 @@ export function splitBillFromRow(
     return Boolean(isFlag);
   };
 
+  // Locate payer participant to resolve email if available
+  const payerClean = row.paid_by.trim().toLowerCase();
+  const payerParticipant = participants.find((p) => {
+    const pEmail = p.email?.trim().toLowerCase();
+    if (pEmail && payerClean.includes("@")) {
+      return pEmail === payerClean;
+    }
+    return p.name.trim().toLowerCase() === payerClean;
+  });
+  const payerEmail = payerParticipant?.email?.trim().toLowerCase() || (payerClean.includes("@") ? payerClean : undefined);
+
   // Determine if the current viewer is the payer
   const isPayerCurrentUser = Boolean(
     currentUser
       ? (currentUserId && row.user_id === currentUserId && row.paid_by_current_user) ||
-        (normCurrentName && row.paid_by.trim().toLowerCase() === normCurrentName) ||
-        (normCurrentEmail && row.paid_by.trim().toLowerCase() === normCurrentEmail)
+        (payerEmail
+          ? Boolean(normCurrentEmail && payerEmail === normCurrentEmail)
+          : Boolean(normCurrentName && payerClean === normCurrentName))
       : row.paid_by_current_user,
   );
 

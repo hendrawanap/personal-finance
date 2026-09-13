@@ -228,8 +228,64 @@ CREATE POLICY "Strict: Users can manage own budgets"
     USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
 
+-- Helper Functions for Split Bills (SECURITY DEFINER breaks RLS circular evaluation)
+CREATE OR REPLACE FUNCTION personal_finance.is_bill_participant(check_bill_id TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = personal_finance, public
+STABLE
+AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM personal_finance.split_bill_participants sbp
+        WHERE sbp.bill_id = check_bill_id
+        AND (
+            sbp.user_id = auth.uid()
+            OR (sbp.email IS NOT NULL AND lower(sbp.email) = lower(coalesce(auth.jwt()->>'email', '')))
+        )
+    );
+$$;
+
+CREATE OR REPLACE FUNCTION personal_finance.is_bill_owner(check_bill_id TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = personal_finance, public
+STABLE
+AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM personal_finance.split_bills sb
+        WHERE sb.id = check_bill_id
+        AND sb.user_id = auth.uid()
+    );
+$$;
+
+CREATE OR REPLACE FUNCTION personal_finance.can_access_bill(check_bill_id TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = personal_finance, public
+STABLE
+AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM personal_finance.split_bills sb
+        WHERE sb.id = check_bill_id
+        AND (
+            sb.user_id = auth.uid()
+            OR personal_finance.is_bill_participant(check_bill_id)
+        )
+    );
+$$;
+
+GRANT EXECUTE ON FUNCTION personal_finance.is_bill_participant(TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION personal_finance.is_bill_owner(TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION personal_finance.can_access_bill(TEXT) TO authenticated;
+
 -- Split Bills Policies
 DROP POLICY IF EXISTS "Users can manage own split bills" ON personal_finance.split_bills;
+DROP POLICY IF EXISTS "Strict: Bill owners have full access" ON personal_finance.split_bills;
+DROP POLICY IF EXISTS "Strict: Participants can view shared split bills" ON personal_finance.split_bills;
+
 CREATE POLICY "Strict: Bill owners have full access"
     ON personal_finance.split_bills
     FOR ALL
@@ -241,41 +297,30 @@ CREATE POLICY "Strict: Participants can view shared split bills"
     ON personal_finance.split_bills
     FOR SELECT
     TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM personal_finance.split_bill_participants sbp
-            WHERE sbp.bill_id = personal_finance.split_bills.id
-            AND lower(sbp.email) = lower(coalesce(auth.jwt()->>'email', ''))
-        )
-    );
+    USING (personal_finance.is_bill_participant(id));
 
 -- Split Bill Participants Policies
 DROP POLICY IF EXISTS "Users can manage split bill participants" ON personal_finance.split_bill_participants;
+DROP POLICY IF EXISTS "Strict: Manage participants of own bills" ON personal_finance.split_bill_participants;
+DROP POLICY IF EXISTS "Strict: View participants of accessible bills" ON personal_finance.split_bill_participants;
+DROP POLICY IF EXISTS "Strict: Participants can view and update own settlement status" ON personal_finance.split_bill_participants;
+DROP POLICY IF EXISTS "Strict: Participants can update own settlement" ON personal_finance.split_bill_participants;
+
 CREATE POLICY "Strict: Manage participants of own bills"
     ON personal_finance.split_bill_participants
     FOR ALL
     TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM personal_finance.split_bills sb
-            WHERE sb.id = split_bill_participants.bill_id
-            AND sb.user_id = auth.uid()
-        )
-    )
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM personal_finance.split_bills sb
-            WHERE sb.id = split_bill_participants.bill_id
-            AND sb.user_id = auth.uid()
-        )
-    );
+    USING (personal_finance.is_bill_owner(bill_id))
+    WITH CHECK (personal_finance.is_bill_owner(bill_id));
 
-CREATE POLICY "Strict: Participants can view and update own settlement status"
+CREATE POLICY "Strict: View participants of accessible bills"
     ON personal_finance.split_bill_participants
     FOR SELECT
     TO authenticated
     USING (
-        lower(email) = lower(coalesce(auth.jwt()->>'email', ''))
+        personal_finance.can_access_bill(bill_id)
+        OR user_id = auth.uid()
+        OR (email IS NOT NULL AND lower(email) = lower(coalesce(auth.jwt()->>'email', '')))
     );
 
 CREATE POLICY "Strict: Participants can update own settlement"
@@ -283,44 +328,31 @@ CREATE POLICY "Strict: Participants can update own settlement"
     FOR UPDATE
     TO authenticated
     USING (
-        lower(email) = lower(coalesce(auth.jwt()->>'email', ''))
+        user_id = auth.uid()
+        OR (email IS NOT NULL AND lower(email) = lower(coalesce(auth.jwt()->>'email', '')))
     )
     WITH CHECK (
-        lower(email) = lower(coalesce(auth.jwt()->>'email', ''))
+        user_id = auth.uid()
+        OR (email IS NOT NULL AND lower(email) = lower(coalesce(auth.jwt()->>'email', '')))
     );
 
 -- Split Bill Items Policies
 DROP POLICY IF EXISTS "Users can manage split bill items" ON personal_finance.split_bill_items;
+DROP POLICY IF EXISTS "Strict: Manage items of own bills" ON personal_finance.split_bill_items;
+DROP POLICY IF EXISTS "Strict: Participants can view items of shared bills" ON personal_finance.split_bill_items;
+
 CREATE POLICY "Strict: Manage items of own bills"
     ON personal_finance.split_bill_items
     FOR ALL
     TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM personal_finance.split_bills sb
-            WHERE sb.id = split_bill_items.bill_id
-            AND sb.user_id = auth.uid()
-        )
-    )
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM personal_finance.split_bills sb
-            WHERE sb.id = split_bill_items.bill_id
-            AND sb.user_id = auth.uid()
-        )
-    );
+    USING (personal_finance.is_bill_owner(bill_id))
+    WITH CHECK (personal_finance.is_bill_owner(bill_id));
 
 CREATE POLICY "Strict: Participants can view items of shared bills"
     ON personal_finance.split_bill_items
     FOR SELECT
     TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM personal_finance.split_bill_participants sbp
-            WHERE sbp.bill_id = split_bill_items.bill_id
-            AND lower(sbp.email) = lower(coalesce(auth.jwt()->>'email', ''))
-        )
-    );
+    USING (personal_finance.can_access_bill(bill_id));
 
 -- ==============================================================================
 -- 7. OPTIONAL AUTH SIGNUP TRIGGER (Auto-create profile when user registers)

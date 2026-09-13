@@ -39,6 +39,7 @@ import {
   updateParticipantSettlementInSupabase,
   syncAllToSupabase,
 } from "@/services/supabase/finance.service";
+import { matchesPayer } from "@/lib/splitBillCalculations";
 
 interface FinanceStoreState {
   accounts: Account[];
@@ -563,17 +564,25 @@ export const useFinanceStore = create<FinanceStoreState>()(
       settleAllForParticipant: (participantNameOrEmail, isPaid, recordReimbursement) => {
         set((state) => {
           const targetKey = participantNameOrEmail.trim().toLowerCase();
+          const isTargetEmail = targetKey.includes("@");
           let totalReimbursed = 0;
 
           const updatedSplitBills = state.splitBills.map((bill) => {
             let modified = false;
 
             const updatedParticipants = bill.participants.map((p) => {
-              const nameMatch = p.name.trim().toLowerCase() === targetKey;
-              const emailMatch = Boolean(p.email && p.email.trim().toLowerCase() === targetKey);
+              const pEmail = p.email?.trim().toLowerCase();
+              const pName = p.name.trim().toLowerCase();
+
+              let matchesTarget = false;
+              if (isTargetEmail || pEmail) {
+                matchesTarget = Boolean(pEmail && pEmail === targetKey);
+              } else {
+                matchesTarget = pName === targetKey;
+              }
 
               // If bill was paid by user, and participant matches target:
-              if (bill.paidByCurrentUser && (nameMatch || emailMatch) && !p.isCurrentUser) {
+              if (bill.paidByCurrentUser && matchesTarget && !p.isCurrentUser) {
                 if (isPaid && p.status === "unpaid") {
                   totalReimbursed += p.shareAmount;
                   modified = true;
@@ -593,7 +602,10 @@ export const useFinanceStore = create<FinanceStoreState>()(
               }
 
               // If bill was paid by target participant, and this is current user:
-              const payerMatch = bill.paidBy.trim().toLowerCase() === targetKey;
+              const payerMatch = matchesPayer(bill, {
+                name: targetKey,
+                email: isTargetEmail ? targetKey : undefined,
+              });
               if (!bill.paidByCurrentUser && payerMatch && p.isCurrentUser) {
                 if (isPaid && p.status === "unpaid") {
                   modified = true;

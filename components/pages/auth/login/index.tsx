@@ -10,15 +10,10 @@ import {
   ArrowRight03Icon,
   Wallet02Icon,
   Alert02Icon,
-  SparklesIcon,
 } from 'hugeicons-react'
 import { useAdminLogin } from '@/hooks/mutation/auth/useAdminLogin'
-import { demoLogin } from '@/services/auth/auth.service'
-import { useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -28,16 +23,6 @@ export default function LoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     login({ identifier: email, password })
-  }
-
-  const handleDemoLogin = async () => {
-    try {
-      await demoLogin()
-      toast.success('Signed in as Demo User')
-      router.push('/dashboard')
-    } catch {
-      toast.error('Failed to start demo session')
-    }
   }
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,25 +55,6 @@ export default function LoginPage() {
           <p className="mt-1 text-sm text-[#8A8271]">Sign in to manage your finances</p>
         </div>
 
-        {/* Demo Fast Login */}
-        <div className="mb-6 rounded-2xl border border-xenia-border bg-white/70 p-4 text-center">
-          <p className="text-xs text-[#5C5748]">Testing offline without Supabase credentials?</p>
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            className="mt-2.5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-xenia-moss-600 bg-white py-2.5 text-xs font-semibold text-xenia-moss-600 shadow-sm transition-all hover:bg-xenia-moss-600 hover:text-white"
-          >
-            <SparklesIcon size={16} />
-            Quick Demo Login (Bypass Auth)
-          </button>
-        </div>
-
-        <div className="relative my-4 flex items-center justify-center">
-          <div className="w-full border-t border-xenia-border" />
-          <span className="bg-[#F8F4E9] px-3 text-[11px] uppercase tracking-wider text-xenia-stone-500">
-            or with credentials
-          </span>
-        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email */}

@@ -62,6 +62,7 @@ export type SplitMethod =
 export interface Friend {
   id: string;
   userId?: string;
+  friendUserId?: string;
   name: string;
   email: string;
   avatarUrl?: string;

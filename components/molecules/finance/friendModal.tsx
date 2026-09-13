@@ -47,22 +47,18 @@ export function FriendModal({ open, onClose, onFriendAdded }: FriendModalProps) 
   >([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Reset form when modal opens
-  useEffect(() => {
-    if (open) {
-      setName("");
-      setEmail("");
-      setSearchQuery("");
-      setSearchResults([]);
-      setErrors({});
-      setTab(supabaseActive ? "search" : "manual");
-    }
-  }, [open, supabaseActive]);
+  const handleClose = () => {
+    setName("");
+    setEmail("");
+    setSearchQuery("");
+    setSearchResults([]);
+    setErrors({});
+    onClose();
+  };
 
   // Debounced search for registered users
   useEffect(() => {
     if (!supabaseActive || tab !== "search" || !searchQuery.trim()) {
-      setSearchResults([]);
       return;
     }
 
@@ -107,7 +103,7 @@ export function FriendModal({ open, onClose, onFriendAdded }: FriendModalProps) 
 
     toast.success(`Added ${user.name} to your friends!`);
     onFriendAdded?.(newFriend);
-    onClose();
+    handleClose();
   };
 
   const handleManualSubmit = (e: React.FormEvent) => {
@@ -147,13 +143,13 @@ export function FriendModal({ open, onClose, onFriendAdded }: FriendModalProps) 
 
     toast.success(`Added ${name.trim()} to your friends!`);
     onFriendAdded?.(newFriend);
-    onClose();
+    handleClose();
   };
 
   return (
     <DialogShell
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title="Add Friend"
       description="Connect with other users to split bills, share expense records, and track balances."
       size="md"
@@ -166,7 +162,11 @@ export function FriendModal({ open, onClose, onFriendAdded }: FriendModalProps) 
               { value: "manual", label: "Add by Name & Email" },
             ]}
             value={tab}
-            onChange={(val) => setTab(val as "search" | "manual")}
+            onChange={(val) => {
+              setTab(val as "search" | "manual");
+              setSearchQuery("");
+              setSearchResults([]);
+            }}
           />
         )}
 
@@ -180,7 +180,12 @@ export function FriendModal({ open, onClose, onFriendAdded }: FriendModalProps) 
                 <TextInput
                   placeholder="e.g. sarah.j@techcorp.com or Marcus"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (!e.target.value.trim()) {
+                      setSearchResults([]);
+                    }
+                  }}
                   className="pl-9"
                 />
                 <Search01Icon
@@ -257,7 +262,7 @@ export function FriendModal({ open, onClose, onFriendAdded }: FriendModalProps) 
                         </span>
                       ) : (
                         <Buttons
-                          style="primary"
+                          style="main"
                           size="sm"
                           icon={<UserAdd01Icon size={14} />}
                           onClick={() => handleAddExistingUser(user)}
@@ -312,11 +317,11 @@ export function FriendModal({ open, onClose, onFriendAdded }: FriendModalProps) 
             </Field>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-xenia-divider">
-              <Buttons style="second" size="md" onClick={onClose} type="button">
+              <Buttons style="second" size="md" onClick={handleClose} type="button">
                 Cancel
               </Buttons>
               <Buttons
-                style="primary"
+                style="main"
                 size="md"
                 type="submit"
                 icon={<UserAdd01Icon size={16} />}

@@ -15,7 +15,11 @@ import { Buttons } from "@/components/atoms/buttons";
 import { StatusBadge } from "@/components/atoms/statusBadge";
 import { useCurrency } from "@/lib/currency";
 import { useFinanceStore } from "@/store/useFinanceStore";
-import { generateParticipantReminder } from "@/lib/splitBillCalculations";
+import {
+  generateParticipantReminder,
+  matchesParticipant,
+  matchesPayer,
+} from "@/lib/splitBillCalculations";
 import { ParticipantSummary } from "@/types/finance";
 
 interface ParticipantDetailModalProps {
@@ -45,22 +49,13 @@ export function ParticipantDetailModal({
   // Re-fetch current live participant status from splitBills
   const liveUnpaidOwedToYou = splitBills.reduce((sum, b) => {
     if (!b.paidByCurrentUser) return sum;
-    const p = b.participants.find(
-      (part) =>
-        part.name.toLowerCase() === participant.name.toLowerCase() ||
-        (part.email &&
-          participant.email &&
-          part.email.toLowerCase() === participant.email.toLowerCase()),
-    );
+    const p = b.participants.find((part) => matchesParticipant(part, participant));
     return p && p.status === "unpaid" ? sum + p.shareAmount : sum;
   }, 0);
 
   const liveUnpaidYouOwe = splitBills.reduce((sum, b) => {
     if (b.paidByCurrentUser) return sum;
-    const isPayer =
-      b.paidBy.toLowerCase() === participant.name.toLowerCase() ||
-      (participant.email &&
-        b.paidBy.toLowerCase() === participant.email.toLowerCase());
+    const isPayer = matchesPayer(b, participant);
     if (!isPayer) return sum;
     const myP = b.participants.find((part) => part.isCurrentUser);
     return myP && myP.status === "unpaid" ? sum + myP.shareAmount : sum;
@@ -100,7 +95,7 @@ export function ParticipantDetailModal({
     try {
       const defaultAccount = accounts[0];
       settleAllForParticipant(
-        participant.name,
+        participant.email || participant.name,
         true,
         defaultAccount ? { accountId: defaultAccount.id } : undefined,
       );
@@ -118,12 +113,8 @@ export function ParticipantDetailModal({
 
     if (targetBill.paidByCurrentUser) {
       // Participant owes user
-      const targetP = targetBill.participants.find(
-        (p) =>
-          p.name.toLowerCase() === participant.name.toLowerCase() ||
-          (p.email &&
-            participant.email &&
-            p.email.toLowerCase() === participant.email.toLowerCase()),
+      const targetP = targetBill.participants.find((p) =>
+        matchesParticipant(p, participant),
       );
       if (!targetP) return;
 
@@ -280,18 +271,15 @@ export function ParticipantDetailModal({
             {participant.bills.map((b) => {
               // Get current live status of this bill and participant
               const liveBill = splitBills.find((sb) => sb.id === b.billId);
-              const liveP = liveBill?.participants.find(
-                (p) =>
-                  p.name.toLowerCase() === participant.name.toLowerCase() ||
-                  (p.email &&
-                    participant.email &&
-                    p.email.toLowerCase() === participant.email.toLowerCase()),
+              const liveP = liveBill?.participants.find((p) =>
+                matchesParticipant(p, participant),
               );
               const myP = liveBill?.participants.find((p) => p.isCurrentUser);
 
               const isUserFronted = liveBill?.paidByCurrentUser;
-              const isPayerThisParticipant =
-                liveBill?.paidBy.toLowerCase() === participant.name.toLowerCase();
+              const isPayerThisParticipant = liveBill
+                ? matchesPayer(liveBill, participant)
+                : false;
 
               const currentStatus = isUserFronted
                 ? liveP?.status ?? b.status

@@ -24,6 +24,7 @@ import {
   SplitParticipant,
 } from "@/types/finance";
 import { useCurrency } from "@/lib/currency";
+import { matchesParticipant } from "@/lib/splitBillCalculations";
 
 interface SplitBillModalProps {
   open: boolean;
@@ -47,6 +48,10 @@ interface ItemDraft {
   name: string;
   amount: string;
   assignedTo: string[];
+}
+
+function generateId(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 }
 
 export function SplitBillModal({
@@ -115,6 +120,31 @@ function SplitBillForm({
   const [otherPayerName, setOtherPayerName] = useState(() =>
     billToEdit && !billToEdit.paidByCurrentUser ? billToEdit.paidBy : "",
   );
+  const [selectedFriendPayerId, setSelectedFriendPayerId] = useState<string>(() => {
+    if (billToEdit && !billToEdit.paidByCurrentUser) {
+      const payerParticipant = billToEdit.participants.find(
+        (p) => !p.isCurrentUser && p.status === "paid",
+      );
+      const payerEmail = payerParticipant?.email || (billToEdit.paidBy.includes("@") ? billToEdit.paidBy : undefined);
+      const f = friends.find((fr) =>
+        matchesParticipant(
+          { name: billToEdit.paidBy, email: payerEmail, userId: payerParticipant?.userId },
+          { name: fr.name, email: fr.email, userId: fr.userId },
+        ),
+      );
+      return f?.id || "";
+    }
+    return "";
+  });
+  const [otherPayerEmail, setOtherPayerEmail] = useState(() => {
+    if (billToEdit && !billToEdit.paidByCurrentUser) {
+      const payerParticipant = billToEdit.participants.find(
+        (p) => !p.isCurrentUser && p.status === "paid",
+      );
+      return payerParticipant?.email || (billToEdit.paidBy.includes("@") ? billToEdit.paidBy : "");
+    }
+    return "";
+  });
   const [payerAccountId, setPayerAccountId] = useState(
     () => billToEdit?.payerAccountId ?? (accounts[0]?.id || ""),
   );
@@ -173,14 +203,16 @@ function SplitBillForm({
 
     return friends.filter((f) => {
       if (f.userId && participantUserIds.has(f.userId)) return false;
-      if (participantEmails.has(f.email.trim().toLowerCase())) return false;
-      if (participantNames.has(f.name.trim().toLowerCase())) return false;
-      return true;
+      const fEmail = f.email?.trim().toLowerCase();
+      if (fEmail) {
+        return !participantEmails.has(fEmail);
+      }
+      return !participantNames.has(f.name.trim().toLowerCase());
     });
   }, [friends, participants]);
 
   const handleAddFriendAsParticipant = (friend: Friend) => {
-    const newId = `p-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const newId = generateId("p");
     const newDraft: ParticipantDraft = {
       id: newId,
       userId: friend.userId,
@@ -193,6 +225,32 @@ function SplitBillForm({
     };
     setParticipants((prev) => [...prev, newDraft]);
     toast.success(`Added ${friend.name} to bill`);
+  };
+
+  const handleSelectFriendAsPayer = (friendId: string) => {
+    if (!friendId) {
+      setSelectedFriendPayerId("");
+      setOtherPayerName("");
+      setOtherPayerEmail("");
+      return;
+    }
+    const friend = friends.find((f) => f.id === friendId);
+    if (!friend) return;
+
+    setSelectedFriendPayerId(friendId);
+    setOtherPayerName(friend.name);
+    setOtherPayerEmail(friend.email || "");
+
+    // Also ensure the friend is added as a participant if not already present
+    const alreadyParticipant = participants.some((p) =>
+      matchesParticipant(
+        { name: p.name, email: p.email, userId: p.userId },
+        { name: friend.name, email: friend.email, userId: friend.userId },
+      ),
+    );
+    if (!alreadyParticipant) {
+      handleAddFriendAsParticipant(friend);
+    }
   };
 
   const handleSelectFriendForParticipant = (participantId: string, friendId: string) => {
@@ -284,7 +342,7 @@ function SplitBillForm({
 
   // Participants management
   const handleAddParticipant = () => {
-    const newId = `p-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const newId = generateId("p");
     const newDraft: ParticipantDraft = {
       id: newId,
       name: "",
@@ -328,7 +386,7 @@ function SplitBillForm({
     setItems((prev) => [
       ...prev,
       {
-        id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        id: generateId("item"),
         name: "",
         amount: "",
         assignedTo: allParticipantIds,
@@ -518,27 +576,41 @@ function SplitBillForm({
 
     const paidBy = payerType === "you" ? currentUserName : otherPayerName.trim();
     const paidByCurrentUser = payerType === "you";
+    const payerCleanEmail = payerType === "you" ? (profile.email || "") : otherPayerEmail.trim();
+
+    const payerTarget = {
+      name: paidBy,
+      email: payerCleanEmail || (paidBy.includes("@") ? paidBy : undefined),
+    };
 
     // Build final participants list
     const finalParticipants: SplitParticipant[] = computedBreakdown.map((p) => {
       const existing = billToEdit?.participants.find((ep) => ep.id === p.id);
       const isPayer = paidByCurrentUser
         ? p.isCurrentUser
-        : p.name.trim() === paidBy;
+        : matchesParticipant(
+            { name: p.name, email: p.email, userId: p.userId },
+            payerTarget,
+          );
       const initialStatus = isPayer ? "paid" : existing?.status ?? "unpaid";
 
-      const matchingFriend = friends.find(
-        (f) =>
-          (p.userId && f.userId === p.userId) ||
-          (p.email && f.email.toLowerCase() === p.email.trim().toLowerCase()) ||
-          f.name.toLowerCase() === p.name.trim().toLowerCase(),
+      const matchingFriend = friends.find((f) =>
+        matchesParticipant(
+          { name: p.name, email: p.email, userId: p.userId },
+          { name: f.name, email: f.email, userId: f.userId },
+        ),
       );
+
+      const effectiveEmail =
+        p.email.trim() ||
+        (isPayer && payerCleanEmail ? payerCleanEmail : matchingFriend?.email) ||
+        undefined;
 
       return {
         id: p.id,
         userId: p.userId || matchingFriend?.userId,
         name: p.name.trim(),
-        email: p.email.trim() || matchingFriend?.email || undefined,
+        email: effectiveEmail,
         isCurrentUser: p.isCurrentUser,
         shareAmount: p.calculatedShare,
         percentage:
@@ -557,7 +629,12 @@ function SplitBillForm({
 
     // Determine initial bill status
     const nonPayerParticipants = finalParticipants.filter((p) =>
-      paidByCurrentUser ? !p.isCurrentUser : p.name !== paidBy,
+      paidByCurrentUser
+        ? !p.isCurrentUser
+        : !matchesParticipant(
+            { name: p.name, email: p.email, userId: p.userId },
+            payerTarget,
+          ),
     );
     const allPaid =
       nonPayerParticipants.length > 0 &&
@@ -697,7 +774,10 @@ function SplitBillForm({
               type="radio"
               name="payerType"
               checked={payerType === "you"}
-              onChange={() => setPayerType("you")}
+              onChange={() => {
+                setPayerType("you");
+                setSelectedFriendPayerId("");
+              }}
               className="text-xenia-moss-600 focus:ring-xenia-moss-600"
             />
             <span>You paid ({currentUserName})</span>
@@ -716,20 +796,80 @@ function SplitBillForm({
         </div>
 
         {payerType === "other" && (
-          <div className="pt-2">
-            <Field
-              label="Payer's Name"
-              required
-              error={errors.otherPayerName}
-              hint="Who fronted this bill?"
-            >
-              <TextInput
-                placeholder="e.g. Marcus Vance"
-                value={otherPayerName}
-                onChange={(e) => setOtherPayerName(e.target.value)}
-                invalid={Boolean(errors.otherPayerName)}
-              />
-            </Field>
+          <div className="pt-2 space-y-3">
+            {friends.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-xenia-stone-700 mb-1.5">
+                  Select Friend as Payer
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {friends.map((fr) => {
+                    const isSelected = selectedFriendPayerId === fr.id;
+                    return (
+                      <button
+                        key={fr.id}
+                        type="button"
+                        onClick={() => handleSelectFriendAsPayer(isSelected ? "" : fr.id)}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer border ${
+                          isSelected
+                            ? "bg-xenia-moss-600 text-white border-xenia-moss-600 shadow-2xs"
+                            : "bg-white text-xenia-stone-700 border-xenia-border hover:border-xenia-moss-600/40 hover:bg-xenia-sand-50"
+                        }`}
+                      >
+                        <UserIcon
+                          size={12}
+                          className={isSelected ? "text-white" : "text-xenia-stone-400"}
+                        />
+                        <span>{fr.name}</span>
+                        {fr.email && (
+                          <span
+                            className={`text-[10px] ${
+                              isSelected ? "text-white/80" : "text-xenia-stone-400"
+                            }`}
+                          >
+                            ({fr.email})
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field
+                label="Payer's Name"
+                required
+                error={errors.otherPayerName}
+                hint="Name of the person who paid"
+              >
+                <TextInput
+                  placeholder="e.g. Marcus Vance"
+                  value={otherPayerName}
+                  onChange={(e) => {
+                    setOtherPayerName(e.target.value);
+                    if (selectedFriendPayerId) setSelectedFriendPayerId("");
+                  }}
+                  invalid={Boolean(errors.otherPayerName)}
+                />
+              </Field>
+
+              <Field
+                label="Payer's Email"
+                hint="Optional — used for exact participant matching"
+              >
+                <TextInput
+                  type="email"
+                  placeholder="e.g. marcus.v@gmail.com"
+                  value={otherPayerEmail}
+                  onChange={(e) => {
+                    setOtherPayerEmail(e.target.value);
+                    if (selectedFriendPayerId) setSelectedFriendPayerId("");
+                  }}
+                />
+              </Field>
+            </div>
           </div>
         )}
 

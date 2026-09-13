@@ -48,7 +48,7 @@ import ConfirmDialog from "@/components/molecules/dashboard/unit/confirmDialog";
 import { exportExcel } from "@/lib/exportExcel";
 import { SplitBill, ParticipantSummary, Friend } from "@/types/finance";
 import { useCurrency } from "@/lib/currency";
-import { computeParticipantSummaries } from "@/lib/splitBillCalculations";
+import { computeParticipantSummaries, matchesParticipant } from "@/lib/splitBillCalculations";
 
 const splitBillFilterParsers = {
   tab: tabEnumParser(["bills", "participants", "friends"] as const, "bills"),
@@ -1016,12 +1016,12 @@ function SplitBillsContent() {
                     Math.max(0, (filters.page || 1) - 1) * 6 + 6,
                   )
                   .map((friend) => {
-                    const summary = participantSummaries.find((p) => {
-                      if (friend.email && p.email && friend.email.toLowerCase() === p.email.toLowerCase()) {
-                        return true;
-                      }
-                      return p.name.toLowerCase() === friend.name.toLowerCase();
-                    });
+                    const summary = participantSummaries.find((p) =>
+                      matchesParticipant(
+                        { name: p.name, email: p.email },
+                        { name: friend.name, email: friend.email, userId: friend.userId },
+                      ),
+                    );
 
                     return (
                       <div
@@ -1068,7 +1068,7 @@ function SplitBillsContent() {
                           {/* Connection & Balance Status */}
                           <div className="mt-4 pt-3 border-t border-xenia-border/60 flex items-center justify-between text-xs">
                             <div>
-                              {friend.friendUserId ? (
+                              {friend.userId ? (
                                 <span className="inline-flex items-center gap-1 rounded-md bg-xenia-moss-600/10 px-2 py-0.5 text-[11px] font-medium text-xenia-moss-600">
                                   <span className="h-1.5 w-1.5 rounded-full bg-xenia-moss-600" />
                                   Connected User

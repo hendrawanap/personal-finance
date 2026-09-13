@@ -19,6 +19,7 @@ import { NativeSelect } from "@/components/molecules/inputs/form";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import { SplitBill, SplitParticipant } from "@/types/finance";
 import { useCurrency } from "@/lib/currency";
+import { matchesParticipant, matchesPayer } from "@/lib/splitBillCalculations";
 
 interface SplitBillDetailModalProps {
   open: boolean;
@@ -318,13 +319,19 @@ export function SplitBillDetailModal({
 
           <div className="divide-y divide-xenia-divider rounded-xl border border-xenia-border bg-white overflow-hidden">
             {currentBill.participants.map((p) => {
-              const isPayer = isPaidByMe ? p.isCurrentUser : p.name === payer;
+              const isPayer = isPaidByMe
+                ? p.isCurrentUser
+                : matchesPayer(currentBill, {
+                    name: p.name,
+                    email: p.email,
+                    userId: p.userId,
+                  });
               const isPaid = p.status === "paid";
-              const isFriend = friends.some(
-                (f) =>
-                  (p.userId && f.userId === p.userId) ||
-                  (p.email && f.email.toLowerCase() === p.email.toLowerCase()) ||
-                  f.name.toLowerCase() === p.name.toLowerCase(),
+              const isFriend = friends.some((f) =>
+                matchesParticipant(
+                  { name: p.name, email: p.email, userId: p.userId },
+                  { name: f.name, email: f.email, userId: f.userId },
+                ),
               );
 
               return (

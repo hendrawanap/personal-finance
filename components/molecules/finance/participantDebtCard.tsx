@@ -72,7 +72,7 @@ export function ParticipantDebtCard({
       // Pick default account if user wants reimbursement recorded
       const defaultAccount = accounts[0];
       settleAllForParticipant(
-        participant.name,
+        participant.email || participant.name,
         true,
         defaultAccount ? { accountId: defaultAccount.id } : undefined,
       );

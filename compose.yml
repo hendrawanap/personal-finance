@@ -1,0 +1,16 @@
+services:
+  # Node.js service (use with: docker compose up nextjs-standalone --build)
+  xenia-dashboard-fe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xenia-dashboard-fe
+    container_name: xenia-dashboard-fe
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: "${PORT:-3000}"
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    restart: unless-stopped

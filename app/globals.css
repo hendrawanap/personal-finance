@@ -1,0 +1,221 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-cormorant-garamond);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* ------------------------------------------------------------------
+   * Font roles.
+   * `font-display`/`font-ui` sudah dipakai di ±70 tempat tapi tidak pernah
+   * didaftarkan, jadi selama ini jatuh ke font default. Keduanya sengaja
+   * menunjuk ke sans dulu supaya tidak ada perubahan visual; ganti
+   * `--font-display` ke `var(--font-cormorant-garamond)` kalau heading memang
+   * mau serif.
+   * ------------------------------------------------------------------ */
+  --font-display: var(--font-sans);
+  --font-ui: var(--font-sans);
+
+  /* ------------------------------------------------------------------
+   * PALET DASHBOARD — namespace kanonik: `xenia-*`.
+   *
+   * Aturan: className TIDAK boleh berisi hex (`bg-[#4F6B52]`); pakai token di
+   * bawah. Nama tanpa prefiks (`sand-*`, `forest-*`, `moss-*`, `ink*`,
+   * `line*`, `surface*`, `brand*`, `danger*`, `ok-*`) adalah ALIAS LAMA yang
+   * menunjuk warna yang sama — masih bekerja, tapi jangan dipakai di kode
+   * baru; akan dihapus setelah migrasi.
+   * ------------------------------------------------------------------ */
+
+  /* Permukaan */
+  --color-xenia-canvas: #F2ECDD;        /* latar halaman */
+  --color-xenia-cream: #F7F4EA;         /* thead tabel, panel sekunder, hover tombol second */
+  --color-xenia-surface-hover: #FAF7EF; /* hover baris tabel, inner panel */
+  --color-xenia-sand-100: #EAE3D2;      /* track segmented control, badge idle */
+  --color-xenia-border: #E2D9C2;
+  --color-xenia-divider: #EFE8D8;
+  --color-xenia-sage-100: #E4E9DC;      /* chip lembut, field read-only */
+
+  /* Teks */
+  --color-xenia-ink-900: #1D1B16;
+  --color-xenia-stone-700: #5C5748;
+  --color-xenia-stone-500: #8A8271;
+  --color-xenia-stone-400: #A39C89;
+
+  /* Aksen utama */
+  --color-xenia-moss-600: #4F6B52;
+  --color-xenia-moss-700: #3F5B42;      /* satu-satunya hover hijau */
+  --color-xenia-moss-800: #324A35;
+  --color-xenia-forest-900: #1D3326;
+  --color-xenia-forest-950: #142219;    /* sidebar, overlay dialog (bg-xenia-forest-950/60) */
+  --color-xenia-brass-500: #B4884F;     /* sorotan/featured */
+
+  /* Semantik status */
+  --color-xenia-danger: #B3452E;        /* tombol destruktif, teks error */
+  --color-xenia-danger-ink: #8A3322;    /* hover destruktif, teks di atas danger-soft */
+  --color-xenia-danger-soft: #FBF1EE;
+  --color-xenia-danger-line: #E8C4B8;
+  --color-xenia-ok-bg: #E4EFE2;
+  --color-xenia-ok-ink: #3F6B46;
+  --color-xenia-warn-bg: #F7ECD9;
+  --color-xenia-warn-ink: #9A7140;
+  --color-xenia-info-bg: #E1EDEC;
+  --color-xenia-info-ink: #2F6B6B;
+  --color-xenia-idle-bg: #EAE3D2;
+  --color-xenia-idle-ink: #8A8271;
+
+  /* ---- ALIAS LAMA (deprecated) ---- */
+  --color-canvas: #F2ECDD;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #F7F4EA;
+  --color-surface-hover: #FAF7EF;
+  --color-forest-950: #142219;
+  --color-forest-900: #1d3326;
+  --color-moss-50: #f4f7f4;
+  --color-moss-100: #e5ede5;
+  --color-moss-600: #4F6B52;
+  --color-moss-700: #3F5B42;
+  --color-moss-800: #324a35;
+  --color-moss-900: #253828;
+  --color-sage-100: #E4E9DC;
+  --color-sand-50: #F2ECDD;
+  --color-sand-100: #EAE3D2;
+  --color-sand-200: #E2D9C2;
+  --color-brass-500: #B4884F;
+  --color-ink: #1D1B16;
+  --color-ink-muted: #5C5748;
+  --color-ink-subtle: #8A8271;
+  --color-ink-faint: #A39C89;
+  --color-line: #E2D9C2;
+  --color-line-soft: #EFE8D8;
+  --color-brand: #4F6B52;
+  --color-brand-hover: #3F5B42;
+  --color-ok-bg: #E4EFE2;
+  --color-ok-ink: #3F6B46;
+  --color-idle-bg: #EAE3D2;
+  --color-danger: #B3452E;
+  --color-danger-ink: #8A3322;
+  /* `text-text` / `text-text-muted` dipakai contentMedia & media picker;
+     sebelumnya tidak terdefinisi sama sekali (tidak menghasilkan CSS). */
+  --color-text: #1D1B16;
+  --color-text-muted: #8A8271;
+}
+
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #24382b;
+  border-radius: 9999px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #4f6b52;
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: #1D1B16;
+  --card: oklch(1 0 0);
+  --card-foreground: #1D1B16;
+  --popover: oklch(1 0 0);
+  --popover-foreground: #1D1B16;
+  --primary: #4F6B52;
+  --primary-foreground: #FFFFFF;
+  --secondary: #EAE3D2;
+  --secondary-foreground: #1D1B16;
+  --muted: #F7F4EA;
+  --muted-foreground: #8A8271;
+  --accent: #E4EFE2;
+  --accent-foreground: #3F6B46;
+  --destructive: #B3452E;
+  --border: #E2D9C2;
+  --input: #E2D9C2;
+  --ring: #4F6B52;
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  html {
+    @apply font-sans;
+    color-scheme: light;
+  }
+}
+

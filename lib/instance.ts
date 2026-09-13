@@ -63,8 +63,8 @@ const refreshAccessToken = async (): Promise<string | null> => {
     const newRefreshToken = payload?.refreshToken
 
     if (newAccessToken) {
-      setCookie('accessToken', newAccessToken)
-      if (newRefreshToken) setCookie('refreshToken', newRefreshToken)
+      setCookie('accessToken', newAccessToken, { path: '/' })
+      if (newRefreshToken) setCookie('refreshToken', newRefreshToken, { path: '/' })
       return newAccessToken
     }
     return null
@@ -188,11 +188,11 @@ axiosPrivate.interceptors.response.use(
           return axiosPrivate(originalRequest)
         }
 
-        // Refresh gagal → bersihkan sesi & tendang ke login
+        // Refresh failed → clear session & redirect to login
         processQueue(error, null)
-        deleteCookie('accessToken')
-        deleteCookie('refreshToken')
-        toast.error('Sesi kamu sudah habis, silakan login ulang')
+        deleteCookie('accessToken', { path: '/' })
+        deleteCookie('refreshToken', { path: '/' })
+        toast.error('Your session has expired. Please log in again.')
         if (isBrowser) {
           setTimeout(() => {
             window.location.href = '/login'
@@ -201,9 +201,9 @@ axiosPrivate.interceptors.response.use(
         return Promise.reject(error)
       } catch (refreshError) {
         processQueue(error, null)
-        deleteCookie('accessToken')
-        deleteCookie('refreshToken')
-        toast.error('Sesi kamu sudah habis, silakan login ulang')
+        deleteCookie('accessToken', { path: '/' })
+        deleteCookie('refreshToken', { path: '/' })
+        toast.error('Your session has expired. Please log in again.')
         if (isBrowser) {
           setTimeout(() => {
             window.location.href = '/login'

@@ -38,6 +38,7 @@ export function SplitBillDetailModal({
   const { format } = useCurrency();
   const accounts = useFinanceStore((s) => s.accounts);
   const profile = useFinanceStore((s) => s.profile);
+  const friends = useFinanceStore((s) => s.friends);
   const settleParticipant = useFinanceStore((s) => s.settleParticipant);
 
   // QR Code view toggle
@@ -60,6 +61,7 @@ export function SplitBillDetailModal({
   const totalAmount = currentBill.totalAmount;
   const payer = currentBill.paidBy;
   const isPaidByMe = currentBill.paidByCurrentUser;
+  const isOwner = isPaidByMe || !currentBill.userId;
 
   const totalSettledAmount = currentBill.participants.reduce((sum, p) => {
     return p.status === "paid" ? sum + p.shareAmount : sum;
@@ -76,6 +78,12 @@ export function SplitBillDetailModal({
   ).length;
 
   const handleToggleParticipantStatus = (participant: SplitParticipant) => {
+    // If not owner, can only settle own participant share
+    if (!isOwner && !participant.isCurrentUser) {
+      toast.error("You can only update your own settlement status");
+      return;
+    }
+
     const isNowPaid = participant.status !== "paid";
     settleParticipant(
       currentBill.id,
@@ -312,6 +320,12 @@ export function SplitBillDetailModal({
             {currentBill.participants.map((p) => {
               const isPayer = isPaidByMe ? p.isCurrentUser : p.name === payer;
               const isPaid = p.status === "paid";
+              const isFriend = friends.some(
+                (f) =>
+                  (p.userId && f.userId === p.userId) ||
+                  (p.email && f.email.toLowerCase() === p.email.toLowerCase()) ||
+                  f.name.toLowerCase() === p.name.toLowerCase(),
+              );
 
               return (
                 <div
@@ -344,6 +358,11 @@ export function SplitBillDetailModal({
                           {isPayer && (
                             <span className="rounded bg-xenia-brass-500/15 px-1.5 py-0.2 text-[10px] font-medium text-xenia-brass-600">
                               Payer
+                            </span>
+                          )}
+                          {isFriend && !p.isCurrentUser && !isPayer && (
+                            <span className="rounded bg-xenia-moss-50 px-1.5 py-0.2 text-[10px] font-medium text-xenia-moss-700">
+                              Friend
                             </span>
                           )}
                         </div>
@@ -380,7 +399,7 @@ export function SplitBillDetailModal({
                   {/* Bottom section on mobile / Right section on desktop: Status Badge & Action Toggle */}
                   <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t border-xenia-divider/60 sm:border-0">
                     <StatusBadge status={p.status} size="sm" />
-                    {!isPayer && (
+                    {!isPayer && (isOwner || p.isCurrentUser) && (
                       <button
                         type="button"
                         onClick={() => handleToggleParticipantStatus(p)}
@@ -391,7 +410,7 @@ export function SplitBillDetailModal({
                         }`}
                       >
                         <CheckmarkCircle02Icon size={14} />
-                        <span>{isPaid ? "Mark Unpaid" : "Mark Paid"}</span>
+                        <span>{isPaid ? "Mark Unpaid" : p.isCurrentUser ? "Mark My Share Paid" : "Mark Paid"}</span>
                       </button>
                     )}
                   </div>
@@ -469,26 +488,34 @@ export function SplitBillDetailModal({
 
         {/* ── Modal Footer ── */}
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-xenia-divider">
-          <button
-            type="button"
-            onClick={() => {
-              onDelete(currentBill.id);
-            }}
-            className="flex items-center justify-center sm:justify-start gap-1.5 text-xs text-xenia-danger hover:underline cursor-pointer py-1"
-          >
-            <Delete02Icon size={14} />
-            <span>Delete Bill</span>
-          </button>
+          {isOwner ? (
+            <button
+              type="button"
+              onClick={() => {
+                onDelete(currentBill.id);
+              }}
+              className="flex items-center justify-center sm:justify-start gap-1.5 text-xs text-xenia-danger hover:underline cursor-pointer py-1"
+            >
+              <Delete02Icon size={14} />
+              <span>Delete Bill</span>
+            </button>
+          ) : (
+            <div className="text-xs text-xenia-stone-500 py-1">
+              Shared bill fronted by <span className="font-medium text-xenia-ink-900">{currentBill.paidBy}</span>
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
-            <Buttons
-              style="second"
-              icon={<Edit01Icon size={14} />}
-              onClick={() => onEdit(currentBill)}
-              className="flex-1 sm:flex-initial justify-center"
-            >
-              Edit Bill
-            </Buttons>
+            {isOwner && (
+              <Buttons
+                style="second"
+                icon={<Edit01Icon size={14} />}
+                onClick={() => onEdit(currentBill)}
+                className="flex-1 sm:flex-initial justify-center"
+              >
+                Edit Bill
+              </Buttons>
+            )}
             <Buttons
               style="main"
               onClick={onClose}

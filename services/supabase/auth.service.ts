@@ -61,8 +61,8 @@ export async function signUpWithSupabase(payload: SignUpRequest): Promise<SignUp
       permissions: ALL_PERMISSIONS,
     };
 
-    setCookie("accessToken", session.access_token);
-    setCookie("refreshToken", session.refresh_token);
+    setCookie("accessToken", session.access_token, { path: "/" });
+    setCookie("refreshToken", session.refresh_token, { path: "/" });
 
     if (isBrowser()) {
       window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
@@ -178,8 +178,8 @@ export async function signInWithSupabase(payload: AdminLoginRequest): Promise<Ad
   };
 
   // Set cookies for Next.js proxy/middleware compatibility
-  setCookie("accessToken", session.access_token);
-  setCookie("refreshToken", session.refresh_token);
+  setCookie("accessToken", session.access_token, { path: "/" });
+  setCookie("refreshToken", session.refresh_token, { path: "/" });
 
   if (isBrowser()) {
     window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
@@ -201,10 +201,25 @@ export async function signOutFromSupabase(): Promise<void> {
     }
   }
 
-  deleteCookie("accessToken");
-  deleteCookie("refreshToken");
+  deleteCookie("accessToken", { path: "/" });
+  deleteCookie("refreshToken", { path: "/" });
 
   if (isBrowser()) {
+    // Proactively clear any Supabase cookies (session chunks, PKCE code-verifier)
+    try {
+      const cookies = document.cookie.split(";");
+      for (const cookie of cookies) {
+        const eqPos = cookie.indexOf("=");
+        const name = (eqPos > -1 ? cookie.substring(0, eqPos) : cookie).trim();
+        if (name.startsWith("sb-")) {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=; SameSite=Lax`;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed clearing Supabase cookies:", e);
+    }
+
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
     window.localStorage.removeItem("personal_finance_storage_v1");
   }

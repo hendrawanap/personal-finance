@@ -6,6 +6,7 @@ import { useSyncExternalStore } from "react";
 import {
   INITIAL_ACCOUNTS,
   INITIAL_BUDGETS,
+  INITIAL_FRIENDS,
   INITIAL_PROFILE,
   INITIAL_SPLIT_BILLS,
   INITIAL_TRANSACTIONS,
@@ -14,6 +15,7 @@ import {
   Account,
   Budget,
   FinancialProfile,
+  Friend,
   SplitBill,
   SplitBillStatus,
   SplitParticipantStatus,
@@ -32,6 +34,9 @@ import {
   persistSplitBillToSupabase,
   removeSplitBillFromSupabase,
   persistProfileToSupabase,
+  persistFriendToSupabase,
+  removeFriendFromSupabase,
+  updateParticipantSettlementInSupabase,
   syncAllToSupabase,
 } from "@/services/supabase/finance.service";
 
@@ -40,6 +45,7 @@ interface FinanceStoreState {
   transactions: Transaction[];
   budgets: Budget[];
   profile: FinancialProfile;
+  friends: Friend[];
   _hasHydrated: boolean;
   setHasHydrated: (state: boolean) => void;
 
@@ -60,6 +66,11 @@ interface FinanceStoreState {
 
   // Profile operations
   updateProfile: (updates: Partial<FinancialProfile>) => void;
+
+  // Friends operations
+  addFriend: (friend: Omit<Friend, "id" | "createdAt">) => Friend;
+  updateFriend: (id: string, updates: Partial<Friend>) => void;
+  deleteFriend: (id: string) => void;
 
   // Split Bill operations
   splitBills: SplitBill[];
@@ -96,6 +107,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
       transactions: [],
       budgets: [],
       splitBills: [],
+      friends: [],
       profile: {
         name: "User",
         email: "",
@@ -319,6 +331,38 @@ export const useFinanceStore = create<FinanceStoreState>()(
         });
       },
 
+      // ── Friends ──
+      addFriend: (data) => {
+        const newFriend: Friend = {
+          ...data,
+          id: `fr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({ friends: [newFriend, ...state.friends] }));
+        if (isSupabaseConfigured()) void persistFriendToSupabase(newFriend);
+        return newFriend;
+      },
+
+      updateFriend: (id, updates) => {
+        set((state) => {
+          const updatedFriends = state.friends.map((f) =>
+            f.id === id
+              ? { ...f, ...updates, updatedAt: new Date().toISOString() }
+              : f,
+          );
+          const target = updatedFriends.find((f) => f.id === id);
+          if (target && isSupabaseConfigured()) void persistFriendToSupabase(target);
+          return { friends: updatedFriends };
+        });
+      },
+
+      deleteFriend: (id) => {
+        set((state) => ({
+          friends: state.friends.filter((f) => f.id !== id),
+        }));
+        if (isSupabaseConfigured()) void removeFriendFromSupabase(id);
+      },
+
       // ── Split Bills ──
       addSplitBill: (data, recordExpense) => {
         const splitBillId = `sb-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
@@ -493,7 +537,11 @@ export const useFinanceStore = create<FinanceStoreState>()(
           };
 
           if (isSupabaseConfigured()) {
-            void persistSplitBillToSupabase(updatedBill);
+            if (targetBill.userId && !targetBill.paidByCurrentUser) {
+              void updateParticipantSettlementInSupabase(billId, participantId, isPaid);
+            } else {
+              void persistSplitBillToSupabase(updatedBill);
+            }
             if (recordReimbursement && isPaid && reimbTxId) {
               const reimb = updatedTransactions.find((t) => t.id === reimbTxId);
               if (reimb) void persistTransactionToSupabase(reimb);
@@ -619,7 +667,14 @@ export const useFinanceStore = create<FinanceStoreState>()(
 
           if (isSupabaseConfigured()) {
             for (const b of updatedSplitBills) {
-              void persistSplitBillToSupabase(b);
+              if (b.userId && !b.paidByCurrentUser) {
+                const myPart = b.participants.find((p) => p.isCurrentUser);
+                if (myPart) {
+                  void updateParticipantSettlementInSupabase(b.id, myPart.id, isPaid);
+                }
+              } else {
+                void persistSplitBillToSupabase(b);
+              }
             }
           }
 
@@ -638,6 +693,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
           transactions: INITIAL_TRANSACTIONS,
           budgets: INITIAL_BUDGETS,
           splitBills: INITIAL_SPLIT_BILLS,
+          friends: INITIAL_FRIENDS,
           profile: INITIAL_PROFILE,
         });
       },
@@ -648,6 +704,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
           transactions: [],
           budgets: [],
           splitBills: [],
+          friends: [],
         });
       },
 
@@ -661,6 +718,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
           splitBills: Array.isArray(data.splitBills)
             ? data.splitBills
             : state.splitBills,
+          friends: Array.isArray(data.friends) ? data.friends : state.friends,
           profile: data.profile ? { ...state.profile, ...data.profile } : state.profile,
         }));
       },
@@ -676,6 +734,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
             transactions: remote.transactions,
             budgets: remote.budgets,
             splitBills: remote.splitBills,
+            friends: remote.friends || state.friends,
             profile: remote.profile
               ? { ...state.profile, ...remote.profile }
               : state.profile,
@@ -694,6 +753,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
           transactions: current.transactions,
           budgets: current.budgets,
           splitBills: current.splitBills,
+          friends: current.friends,
           profile: current.profile,
           version: 1,
         });

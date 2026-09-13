@@ -7,19 +7,16 @@ export function useLogout() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  return () => {
-    logout();
+  return async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.warn("Logout error:", err);
+    }
+
     queryClient.clear();
-
-    toast.success("Successfully signed out", {
-      style: {
-        background: "#1B2B21",
-        color: "#F2ECDD",
-        border: "1px solid #24382B",
-      },
-      iconTheme: { primary: "#E4574C", secondary: "#F2ECDD" },
-    });
-
-    router.push("/login");
+    toast.success("Successfully signed out");
+    router.replace("/login");
+    router.refresh();
   };
 }

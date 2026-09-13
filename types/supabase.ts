@@ -4,6 +4,7 @@ import {
   Budget,
   BudgetPeriod,
   FinancialProfile,
+  Friend,
   SplitBill,
   SplitBillStatus,
   SplitMethod,
@@ -88,6 +89,7 @@ export interface SplitBillRow {
 export interface SplitBillParticipantRow {
   id: string;
   bill_id: string;
+  user_id?: string | null;
   name: string;
   email: string | null;
   is_current_user: boolean;
@@ -96,6 +98,18 @@ export interface SplitBillParticipantRow {
   shares: number | null;
   status: SplitParticipantStatus;
   settled_at: string | null;
+}
+
+export interface FriendRow {
+  id: string;
+  user_id: string;
+  friend_user_id: string | null;
+  name: string;
+  email: string;
+  avatar_url: string | null;
+  status: "accepted" | "pending";
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SplitBillItemRow {
@@ -204,15 +218,46 @@ export function splitBillFromRow(
   row: SplitBillRow,
   participants: SplitBillParticipantRow[],
   items: SplitBillItemRow[] = [],
+  currentUser?: { id?: string | null; email?: string | null; name?: string | null },
 ): SplitBill {
+  const normCurrentEmail = currentUser?.email?.trim().toLowerCase();
+  const normCurrentName = currentUser?.name?.trim().toLowerCase();
+  const currentUserId = currentUser?.id;
+
+  const isCurrent = (
+    pName: string,
+    pEmail?: string | null,
+    pUserId?: string | null,
+    isFlag?: boolean,
+  ): boolean => {
+    if (currentUserId && pUserId && pUserId === currentUserId) return true;
+    if (normCurrentEmail && pEmail && pEmail.trim().toLowerCase() === normCurrentEmail) return true;
+    if (normCurrentName && pName && pName.trim().toLowerCase() === normCurrentName) return true;
+    if (currentUserId && row.user_id && row.user_id !== currentUserId) {
+      // Viewing a shared bill created by someone else: do not trust creator's is_current_user flag
+      return false;
+    }
+    return Boolean(isFlag);
+  };
+
+  // Determine if the current viewer is the payer
+  const isPayerCurrentUser = Boolean(
+    currentUser
+      ? (currentUserId && row.user_id === currentUserId && row.paid_by_current_user) ||
+        (normCurrentName && row.paid_by.trim().toLowerCase() === normCurrentName) ||
+        (normCurrentEmail && row.paid_by.trim().toLowerCase() === normCurrentEmail)
+      : row.paid_by_current_user,
+  );
+
   return {
     id: row.id,
+    userId: row.user_id ?? undefined,
     title: row.title,
     date: row.date,
     category: row.category,
     totalAmount: Number(row.total_amount),
     paidBy: row.paid_by,
-    paidByCurrentUser: row.paid_by_current_user,
+    paidByCurrentUser: isPayerCurrentUser,
     payerAccountId: row.payer_account_id ?? undefined,
     linkedTransactionId: row.linked_transaction_id ?? undefined,
     splitMethod: row.split_method,
@@ -224,9 +269,10 @@ export function splitBillFromRow(
     updatedAt: row.updated_at,
     participants: participants.map((p) => ({
       id: p.id,
+      userId: p.user_id ?? undefined,
       name: p.name,
       email: p.email ?? undefined,
-      isCurrentUser: p.is_current_user,
+      isCurrentUser: isCurrent(p.name, p.email, p.user_id, p.is_current_user),
       shareAmount: Number(p.share_amount),
       percentage: p.percentage ? Number(p.percentage) : undefined,
       shares: p.shares ? Number(p.shares) : undefined,
@@ -252,7 +298,7 @@ export function splitBillToRow(
 } {
   const billRow: SplitBillRow = {
     id: bill.id,
-    user_id: userId ?? null,
+    user_id: userId ?? bill.userId ?? null,
     title: bill.title,
     date: bill.date,
     category: bill.category,
@@ -274,6 +320,7 @@ export function splitBillToRow(
     (p) => ({
       id: p.id,
       bill_id: bill.id,
+      user_id: p.userId ?? (p.isCurrentUser ? (userId ?? null) : null),
       name: p.name,
       email: p.email ?? null,
       is_current_user: p.isCurrentUser,
@@ -294,6 +341,33 @@ export function splitBillToRow(
   }));
 
   return { bill: billRow, participants: participantRows, items: itemRows };
+}
+
+export function friendFromRow(row: FriendRow): Friend {
+  return {
+    id: row.id,
+    userId: row.friend_user_id ?? undefined,
+    name: row.name,
+    email: row.email,
+    avatarUrl: row.avatar_url ?? undefined,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function friendToRow(friend: Friend, currentUserId: string): FriendRow {
+  return {
+    id: friend.id,
+    user_id: currentUserId,
+    friend_user_id: friend.userId ?? null,
+    name: friend.name,
+    email: friend.email,
+    avatar_url: friend.avatarUrl ?? null,
+    status: friend.status || "accepted",
+    created_at: friend.createdAt || new Date().toISOString(),
+    updated_at: friend.updatedAt || new Date().toISOString(),
+  };
 }
 
 export function profileFromRow(row: ProfileRow): FinancialProfile {

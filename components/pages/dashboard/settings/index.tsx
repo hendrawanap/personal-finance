@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
 import {
   Download01Icon,
   Upload01Icon,
@@ -44,7 +43,7 @@ import {
   updateSupabasePassword,
   updateSupabaseUserProfile,
 } from "@/services/supabase/auth.service";
-import { logout } from "@/services/auth/auth.service";
+import { useLogout } from "@/hooks/mutation/auth/useLogout";
 import { FinancialProfile } from "@/types/finance";
 
 interface ProfilePreferencesProps {
@@ -165,7 +164,6 @@ function ProfilePreferencesSection({
 }
 
 export default function SettingsPage() {
-  const router = useRouter();
   const hydrated = useFinanceHydrated();
   const profile = useFinanceStore((s) => s.profile);
   const updateProfile = useFinanceStore((s) => s.updateProfile);
@@ -304,11 +302,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    toast.success("Logged out successfully");
-    router.push("/login");
-  };
+  const handleLogout = useLogout();
 
   const handleExportBackup = () => {
     try {

@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Add01Icon, Delete02Icon, UserIcon } from "hugeicons-react";
+import { Add01Icon, CheckmarkCircle02Icon, Delete02Icon, UserIcon } from "hugeicons-react";
 
 import { DialogShell } from "@/components/molecules/dashboard/unit/dialogShell";
 import {
@@ -17,6 +17,7 @@ import { PillTabs } from "@/components/atoms/pillTabs";
 import { useFinanceStore } from "@/store/useFinanceStore";
 import {
   EXPENSE_CATEGORIES,
+  Friend,
   SplitBill,
   SplitItem,
   SplitMethod,
@@ -32,6 +33,7 @@ interface SplitBillModalProps {
 
 interface ParticipantDraft {
   id: string;
+  userId?: string;
   name: string;
   email: string;
   isCurrentUser: boolean;
@@ -84,6 +86,8 @@ function SplitBillForm({
 }) {
   const accounts = useFinanceStore((s) => s.accounts);
   const profile = useFinanceStore((s) => s.profile);
+  const friends = useFinanceStore((s) => s.friends);
+  const addFriend = useFinanceStore((s) => s.addFriend);
   const addSplitBill = useFinanceStore((s) => s.addSplitBill);
   const updateSplitBill = useFinanceStore((s) => s.updateSplitBill);
 
@@ -122,6 +126,7 @@ function SplitBillForm({
     if (billToEdit && billToEdit.participants.length > 0) {
       return billToEdit.participants.map((p) => ({
         id: p.id,
+        userId: p.userId,
         name: p.name,
         email: p.email ?? "",
         isCurrentUser: p.isCurrentUser,
@@ -151,6 +156,88 @@ function SplitBillForm({
       },
     ];
   });
+
+  // Friends not yet added to this bill
+  const availableFriends = useMemo(() => {
+    const participantEmails = new Set(
+      participants
+        .map((p) => p.email.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    const participantNames = new Set(
+      participants.map((p) => p.name.trim().toLowerCase()).filter(Boolean),
+    );
+    const participantUserIds = new Set(
+      participants.map((p) => p.userId).filter(Boolean),
+    );
+
+    return friends.filter((f) => {
+      if (f.userId && participantUserIds.has(f.userId)) return false;
+      if (participantEmails.has(f.email.trim().toLowerCase())) return false;
+      if (participantNames.has(f.name.trim().toLowerCase())) return false;
+      return true;
+    });
+  }, [friends, participants]);
+
+  const handleAddFriendAsParticipant = (friend: Friend) => {
+    const newId = `p-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const newDraft: ParticipantDraft = {
+      id: newId,
+      userId: friend.userId,
+      name: friend.name,
+      email: friend.email,
+      isCurrentUser: false,
+      exactAmount: "",
+      percentage: "0",
+      shares: "1",
+    };
+    setParticipants((prev) => [...prev, newDraft]);
+    toast.success(`Added ${friend.name} to bill`);
+  };
+
+  const handleSelectFriendForParticipant = (participantId: string, friendId: string) => {
+    const selected = friends.find((f) => f.id === friendId);
+    if (!selected) return;
+    setParticipants((prev) =>
+      prev.map((p) =>
+        p.id === participantId
+          ? {
+              ...p,
+              userId: selected.userId,
+              name: selected.name,
+              email: selected.email,
+            }
+          : p,
+      ),
+    );
+  };
+
+  const handleSaveParticipantAsFriend = (p: ParticipantDraft) => {
+    if (!p.name.trim() || !p.email.trim()) {
+      toast.error("Both name and email are required to save as friend");
+      return;
+    }
+    const cleanEmail = p.email.trim().toLowerCase();
+    const existing = friends.find((f) => f.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      toast.error("This friend is already saved");
+      return;
+    }
+    const newFriend = addFriend({
+      userId: p.userId,
+      name: p.name.trim(),
+      email: cleanEmail,
+      status: "accepted",
+    });
+    if (newFriend.userId) {
+      setParticipants((prev) =>
+        prev.map((item) =>
+          item.id === p.id ? { ...item, userId: newFriend.userId } : item,
+        ),
+      );
+    }
+    toast.success(`Saved ${p.name} to your friends!`);
+  };
 
   // Itemized Fields
   const [items, setItems] = useState<ItemDraft[]>(() => {
@@ -440,10 +527,18 @@ function SplitBillForm({
         : p.name.trim() === paidBy;
       const initialStatus = isPayer ? "paid" : existing?.status ?? "unpaid";
 
+      const matchingFriend = friends.find(
+        (f) =>
+          (p.userId && f.userId === p.userId) ||
+          (p.email && f.email.toLowerCase() === p.email.trim().toLowerCase()) ||
+          f.name.toLowerCase() === p.name.trim().toLowerCase(),
+      );
+
       return {
         id: p.id,
+        userId: p.userId || matchingFriend?.userId,
         name: p.name.trim(),
-        email: p.email.trim() || undefined,
+        email: p.email.trim() || matchingFriend?.email || undefined,
         isCurrentUser: p.isCurrentUser,
         shareAmount: p.calculatedShare,
         percentage:
@@ -842,34 +937,104 @@ function SplitBillForm({
           <p className="text-xs text-xenia-danger">{errors.percentage}</p>
         )}
 
+        {availableFriends.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-xenia-sand-50 border border-xenia-border/60">
+            <span className="text-[11px] font-medium text-xenia-stone-500">
+              Add Friend:
+            </span>
+            {availableFriends.map((fr) => (
+              <button
+                key={fr.id}
+                type="button"
+                onClick={() => handleAddFriendAsParticipant(fr)}
+                className="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full bg-white hover:bg-xenia-moss-50 hover:text-xenia-moss-700 hover:border-xenia-moss-600 text-xenia-ink-900 border border-xenia-border transition-colors cursor-pointer font-medium"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-xenia-moss-600" />
+                <span>{fr.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="space-y-2.5">
           {computedBreakdown.map((p) => (
             <div
               key={p.id}
               className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 rounded-lg border border-xenia-divider p-2.5 bg-xenia-sand-50/60"
             >
-              {/* Row 1 on mobile: Avatar, Name, and Mobile Delete Button */}
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-xenia-sand-100 text-xenia-stone-600 shrink-0">
+              {/* Row 1 on mobile: Avatar, Name & Email, and Mobile Delete Button */}
+              <div className="flex items-start gap-2 flex-1 min-w-0">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-xenia-sand-100 text-xenia-stone-600 shrink-0 mt-0.5">
                   <UserIcon size={16} />
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <TextInput
-                    placeholder={p.isCurrentUser ? "Your Name" : "Friend's Name"}
-                    value={p.name}
-                    onChange={(e) =>
-                      updateParticipant(p.id, "name", e.target.value)
-                    }
-                    className="text-xs py-1.5"
-                  />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex-1 min-w-0">
+                      <TextInput
+                        placeholder={p.isCurrentUser ? "Your Name" : "Friend's Name"}
+                        value={p.name}
+                        onChange={(e) =>
+                          updateParticipant(p.id, "name", e.target.value)
+                        }
+                        className="text-xs py-1.5"
+                      />
+                    </div>
+                    {!p.isCurrentUser && friends.length > 0 && (
+                      <select
+                        aria-label="Select from friends"
+                        value=""
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            handleSelectFriendForParticipant(p.id, e.target.value);
+                          }
+                        }}
+                        className="text-[11px] py-1.5 px-2 rounded-lg border border-xenia-border bg-white text-xenia-stone-600 hover:text-xenia-ink-900 hover:border-xenia-moss-600 cursor-pointer shrink-0 max-w-[120px] truncate"
+                      >
+                        <option value="">Friend...</option>
+                        {friends.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  {!p.isCurrentUser && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="email"
+                        placeholder="Email (optional, shares bill with user)"
+                        value={p.email}
+                        onChange={(e) =>
+                          updateParticipant(p.id, "email", e.target.value)
+                        }
+                        className="text-[11px] px-2.5 py-1 rounded-md border border-xenia-divider bg-white text-xenia-stone-600 placeholder:text-xenia-stone-400 focus:outline-none focus:border-xenia-moss-600 w-full"
+                      />
+                      {p.email && friends.some((f) => f.email.toLowerCase() === p.email.trim().toLowerCase()) ? (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-xenia-moss-700 bg-xenia-moss-100/70 px-1.5 py-0.5 rounded shrink-0">
+                          <CheckmarkCircle02Icon size={12} />
+                          Friend
+                        </span>
+                      ) : p.email.trim() && p.name.trim() ? (
+                        <button
+                          type="button"
+                          onClick={() => handleSaveParticipantAsFriend(p)}
+                          className="text-[10px] font-medium text-xenia-moss-700 hover:text-xenia-moss-800 hover:underline shrink-0 cursor-pointer"
+                        >
+                          + Save Friend
+                        </button>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
 
                 {!p.isCurrentUser && (
                   <button
                     type="button"
                     onClick={() => handleRemoveParticipant(p.id)}
-                    className="sm:hidden p-1.5 rounded text-xenia-stone-400 hover:text-xenia-danger hover:bg-xenia-danger-soft transition-colors cursor-pointer shrink-0"
+                    className="sm:hidden p-1.5 rounded text-xenia-stone-400 hover:text-xenia-danger hover:bg-xenia-danger-soft transition-colors cursor-pointer shrink-0 mt-0.5"
                     title="Remove person"
                   >
                     <Delete02Icon size={16} />

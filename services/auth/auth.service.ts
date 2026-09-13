@@ -55,8 +55,8 @@ export async function adminLogin(
     window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
   }
 
-  setCookie("accessToken", data.accessToken);
-  setCookie("refreshToken", data.refreshToken);
+  setCookie("accessToken", data.accessToken, { path: "/" });
+  setCookie("refreshToken", data.refreshToken, { path: "/" });
 
   return data;
 }
@@ -84,8 +84,8 @@ export async function demoLogin(): Promise<AdminLoginData> {
     window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
   }
 
-  setCookie("accessToken", data.accessToken);
-  setCookie("refreshToken", data.refreshToken);
+  setCookie("accessToken", data.accessToken, { path: "/" });
+  setCookie("refreshToken", data.refreshToken, { path: "/" });
 
   // Explicitly load demo sample dataset for demo user
   useFinanceStore.getState().resetToDefaults();
@@ -141,14 +141,28 @@ export async function getProfile(): Promise<AuthProfile> {
 /**
  * Logout and clear session, including private financial state
  */
-export function logout(): void {
+export async function logout(): Promise<void> {
   if (isSupabaseConfigured()) {
-    void signOutFromSupabase();
+    await signOutFromSupabase();
   }
 
-  deleteCookie("accessToken");
-  deleteCookie("refreshToken");
+  deleteCookie("accessToken", { path: "/" });
+  deleteCookie("refreshToken", { path: "/" });
   if (isBrowser()) {
+    try {
+      const cookies = document.cookie.split(";");
+      for (const cookie of cookies) {
+        const eqPos = cookie.indexOf("=");
+        const name = (eqPos > -1 ? cookie.substring(0, eqPos) : cookie).trim();
+        if (name.startsWith("sb-")) {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=; SameSite=Lax`;
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
     window.localStorage.removeItem("personal_finance_storage_v1");
   }

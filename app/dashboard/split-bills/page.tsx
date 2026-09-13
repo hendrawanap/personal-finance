@@ -12,6 +12,9 @@ import {
   Edit01Icon,
   Invoice01Icon,
   ReceiptDollarIcon,
+  UserAdd01Icon,
+  UserGroupIcon,
+  UserIcon,
 } from "hugeicons-react";
 import type { ColumnDef, OnChangeFn, PaginationState, SortingState } from "@tanstack/react-table";
 import toast from "react-hot-toast";
@@ -40,14 +43,15 @@ import { SplitBillModal } from "@/components/molecules/finance/splitBillModal";
 import { SplitBillDetailModal } from "@/components/molecules/finance/splitBillDetailModal";
 import { ParticipantDebtCard } from "@/components/molecules/finance/participantDebtCard";
 import { ParticipantDetailModal } from "@/components/molecules/finance/participantDetailModal";
+import { FriendModal } from "@/components/molecules/finance/friendModal";
 import ConfirmDialog from "@/components/molecules/dashboard/unit/confirmDialog";
 import { exportExcel } from "@/lib/exportExcel";
-import { SplitBill, ParticipantSummary } from "@/types/finance";
+import { SplitBill, ParticipantSummary, Friend } from "@/types/finance";
 import { useCurrency } from "@/lib/currency";
 import { computeParticipantSummaries } from "@/lib/splitBillCalculations";
 
 const splitBillFilterParsers = {
-  tab: tabEnumParser(["bills", "participants"] as const, "bills"),
+  tab: tabEnumParser(["bills", "participants", "friends"] as const, "bills"),
   q: searchParser,
   status: enumParser(["all", "pending", "partial", "settled"] as const, "all"),
   role: enumParser(["all", "owed_to_you", "you_owe"] as const, "all"),
@@ -64,6 +68,8 @@ function SplitBillsContent() {
   const hydrated = useFinanceHydrated();
   const { format, symbol } = useCurrency();
   const splitBills = useFinanceStore((s) => s.splitBills);
+  const friends = useFinanceStore((s) => s.friends);
+  const deleteFriend = useFinanceStore((s) => s.deleteFriend);
   const profile = useFinanceStore((s) => s.profile);
   const deleteSplitBill = useFinanceStore((s) => s.deleteSplitBill);
 
@@ -75,7 +81,9 @@ function SplitBillsContent() {
   const [selectedParticipantForLedger, setSelectedParticipantForLedger] =
     useState<ParticipantSummary | null>(null);
   const [ledgerModalOpen, setLedgerModalOpen] = useState(false);
+  const [friendModalOpen, setFriendModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingFriendId, setDeletingFriendId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
   const pagination = useMemo<PaginationState>(
@@ -230,6 +238,19 @@ function SplitBillsContent() {
     });
   }, [splitBills, filters]);
 
+  // ── Filtered Friends ──
+  const filteredFriends = useMemo(() => {
+    return friends.filter((f) => {
+      if (filters.q) {
+        const query = filters.q.toLowerCase();
+        const matchName = f.name.toLowerCase().includes(query);
+        const matchEmail = Boolean(f.email && f.email.toLowerCase().includes(query));
+        return matchName || matchEmail;
+      }
+      return true;
+    });
+  }, [friends, filters.q]);
+
   // ── Actions ──
   const handleOpenAdd = () => {
     setEditingBill(null);
@@ -253,6 +274,14 @@ function SplitBillsContent() {
       toast.success("Split bill deleted successfully");
       setDeletingId(null);
       setDetailModalOpen(false);
+    }
+  };
+
+  const handleConfirmDeleteFriend = () => {
+    if (deletingFriendId) {
+      deleteFriend(deletingFriendId);
+      toast.success("Friend removed successfully");
+      setDeletingFriendId(null);
     }
   };
 
@@ -587,33 +616,60 @@ function SplitBillsContent() {
                   value: "participants",
                   label: `People (${participantSummaries.length})`,
                 },
+                {
+                  value: "friends",
+                  label: `Friends (${friends.length})`,
+                },
               ]}
               value={filters.tab}
               onChange={(val) =>
                 setFilters({
-                  tab: val as "bills" | "participants",
+                  tab: val as "bills" | "participants" | "friends",
                   page: 1,
                 })
               }
             />
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Buttons
-                style="second"
-                icon={<Download01Icon size={16} />}
-                onClick={handleExport}
-                loading={isExporting}
-                className="flex-1 sm:flex-initial"
-              >
-                Export
-              </Buttons>
-              <Buttons
-                style="main"
-                icon={<Add01Icon size={16} />}
-                onClick={handleOpenAdd}
-                className="flex-1 sm:flex-initial"
-              >
-                Create Split Bill
-              </Buttons>
+              {filters.tab === "friends" ? (
+                <>
+                  <Buttons
+                    style="second"
+                    icon={<Add01Icon size={16} />}
+                    onClick={handleOpenAdd}
+                    className="flex-1 sm:flex-initial"
+                  >
+                    Split Bill
+                  </Buttons>
+                  <Buttons
+                    style="main"
+                    icon={<UserAdd01Icon size={16} />}
+                    onClick={() => setFriendModalOpen(true)}
+                    className="flex-1 sm:flex-initial"
+                  >
+                    Add Friend
+                  </Buttons>
+                </>
+              ) : (
+                <>
+                  <Buttons
+                    style="second"
+                    icon={<Download01Icon size={16} />}
+                    onClick={handleExport}
+                    loading={isExporting}
+                    className="flex-1 sm:flex-initial"
+                  >
+                    Export
+                  </Buttons>
+                  <Buttons
+                    style="main"
+                    icon={<Add01Icon size={16} />}
+                    onClick={handleOpenAdd}
+                    className="flex-1 sm:flex-initial"
+                  >
+                    Create Split Bill
+                  </Buttons>
+                </>
+              )}
             </div>
           </div>
         }
@@ -890,6 +946,211 @@ function SplitBillsContent() {
         </div>
       )}
 
+      {/* ── Tab View: Friends Management ── */}
+      {filters.tab === "friends" && (
+        <div className="space-y-4">
+          {/* Friends Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
+              <div className="w-full sm:w-72">
+                <SearchBars
+                  placeholder="Search friends by name or email..."
+                  value={filters.q}
+                  onChange={(val) => setFilters({ q: val, page: 1 })}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 text-xs text-xenia-stone-500 font-mono">
+              <span>{filteredFriends.length} friends</span>
+            </div>
+          </div>
+
+          {/* Friends Grid */}
+          {friends.length === 0 ? (
+            <div className="rounded-xl border border-xenia-border bg-white p-12 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-xenia-sand-100 text-xenia-stone-500">
+                <UserGroupIcon size={24} />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-xenia-ink-900">
+                No friends added yet
+              </p>
+              <p className="mt-1 text-xs text-xenia-stone-500 max-w-sm mx-auto">
+                Add friends by searching registered users or adding contacts to easily select them when creating split bills and share expenses.
+              </p>
+              <div className="mt-5">
+                <Buttons
+                  style="main"
+                  size="sm"
+                  icon={<UserAdd01Icon size={16} />}
+                  onClick={() => setFriendModalOpen(true)}
+                >
+                  Add Your First Friend
+                </Buttons>
+              </div>
+            </div>
+          ) : filteredFriends.length === 0 ? (
+            <div className="rounded-xl border border-xenia-border bg-white p-12 text-center">
+              <p className="text-sm font-medium text-xenia-ink-900">
+                No friends match your search
+              </p>
+              <p className="mt-1 text-xs text-xenia-stone-500">
+                Try searching with a different name or email.
+              </p>
+              <div className="mt-4">
+                <Buttons
+                  style="second"
+                  size="sm"
+                  onClick={() => setFilters({ q: "", page: 1 })}
+                >
+                  Reset Search
+                </Buttons>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredFriends
+                  .slice(
+                    Math.max(0, (filters.page || 1) - 1) * 6,
+                    Math.max(0, (filters.page || 1) - 1) * 6 + 6,
+                  )
+                  .map((friend) => {
+                    const summary = participantSummaries.find((p) => {
+                      if (friend.email && p.email && friend.email.toLowerCase() === p.email.toLowerCase()) {
+                        return true;
+                      }
+                      return p.name.toLowerCase() === friend.name.toLowerCase();
+                    });
+
+                    return (
+                      <div
+                        key={friend.id}
+                        className="rounded-2xl border border-xenia-border bg-white p-5 shadow-2xs transition-all hover:border-xenia-moss-600/30 flex flex-col justify-between"
+                      >
+                        <div>
+                          {/* Header: Avatar, Name, Badges */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-xenia-sand-100 text-sm font-semibold text-xenia-ink-900 ring-2 ring-white">
+                                {friend.avatarUrl ? (
+                                  <img
+                                    src={friend.avatarUrl}
+                                    alt={friend.name}
+                                    className="h-full w-full rounded-full object-cover"
+                                  />
+                                ) : (
+                                  friend.name.charAt(0).toUpperCase()
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <h3 className="font-semibold text-sm text-xenia-ink-900 truncate">
+                                  {friend.name}
+                                </h3>
+                                {friend.email && (
+                                  <p className="text-xs text-xenia-stone-500 truncate">
+                                    {friend.email}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setDeletingFriendId(friend.id)}
+                              title="Remove Friend"
+                              className="rounded p-1 text-xenia-stone-400 hover:bg-xenia-danger-soft hover:text-xenia-danger transition-colors cursor-pointer shrink-0"
+                            >
+                              <Delete02Icon size={16} />
+                            </button>
+                          </div>
+
+                          {/* Connection & Balance Status */}
+                          <div className="mt-4 pt-3 border-t border-xenia-border/60 flex items-center justify-between text-xs">
+                            <div>
+                              {friend.friendUserId ? (
+                                <span className="inline-flex items-center gap-1 rounded-md bg-xenia-moss-600/10 px-2 py-0.5 text-[11px] font-medium text-xenia-moss-600">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-xenia-moss-600" />
+                                  Connected User
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-md bg-xenia-sand-100 px-2 py-0.5 text-[11px] font-medium text-xenia-stone-600">
+                                  Manual Contact
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="font-mono text-right">
+                              {summary ? (
+                                summary.status === "owes_you" ? (
+                                  <span className="font-medium text-xenia-moss-600">
+                                    Owes you {format(summary.netBalance)}
+                                  </span>
+                                ) : summary.status === "you_owe" ? (
+                                  <span className="font-medium text-xenia-danger">
+                                    You owe {format(Math.abs(summary.netBalance))}
+                                  </span>
+                                ) : (
+                                  <span className="text-xenia-stone-400">
+                                    Settled up
+                                  </span>
+                                )
+                              ) : (
+                                <span className="text-xenia-stone-400">
+                                  No bills yet
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="mt-4 pt-3 border-t border-xenia-border/60 flex items-center gap-2">
+                          {summary && summary.billsCount > 0 ? (
+                            <Buttons
+                              style="second"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => {
+                                setSelectedParticipantForLedger(summary);
+                                setLedgerModalOpen(true);
+                              }}
+                            >
+                              Ledger ({summary.billsCount})
+                            </Buttons>
+                          ) : (
+                            <div className="flex-1" />
+                          )}
+                          <Buttons
+                            style="second"
+                            size="sm"
+                            icon={<Invoice01Icon size={14} />}
+                            onClick={handleOpenAdd}
+                          >
+                            Split Bill
+                          </Buttons>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {filteredFriends.length > 6 && (
+                <div className="rounded-2xl border border-xenia-border bg-white px-5 py-3">
+                  <Pagination
+                    page={filters.page || 1}
+                    pageCount={Math.max(1, Math.ceil(filteredFriends.length / 6))}
+                    totalItems={filteredFriends.length}
+                    pageSize={6}
+                    onPageChange={(p) => setFilters({ page: p })}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Add / Edit Split Bill Modal ── */}
       <SplitBillModal
         open={modalOpen}
@@ -924,6 +1185,12 @@ function SplitBillsContent() {
         participant={selectedParticipantForLedger}
       />
 
+      {/* ── Friend Modal ── */}
+      <FriendModal
+        open={friendModalOpen}
+        onClose={() => setFriendModalOpen(false)}
+      />
+
       {/* ── Delete Confirmation Dialog ── */}
       <ConfirmDialog
         open={Boolean(deletingId)}
@@ -932,6 +1199,16 @@ function SplitBillsContent() {
         confirmLabel="Delete"
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletingId(null)}
+      />
+
+      {/* ── Delete Friend Confirmation Dialog ── */}
+      <ConfirmDialog
+        open={Boolean(deletingFriendId)}
+        title="Remove Friend"
+        description="Are you sure you want to remove this friend? Past split bills with this friend will remain intact."
+        confirmLabel="Remove"
+        onConfirm={handleConfirmDeleteFriend}
+        onCancel={() => setDeletingFriendId(null)}
       />
     </PageShell>
   );

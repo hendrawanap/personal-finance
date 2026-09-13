@@ -1,4 +1,4 @@
-import { Account, Budget, FinancialProfile, SplitBill, Transaction } from "@/types/finance";
+import { Account, Budget, FinancialProfile, Friend, SplitBill, Transaction } from "@/types/finance";
 
 export const INITIAL_PROFILE: FinancialProfile = {
   name: "Alex Morgan",
@@ -562,6 +562,51 @@ export const INITIAL_SPLIT_BILLS: SplitBill[] = [
       { id: "p-1202", name: "Sarah Jenkins", email: "sarah.j@techcorp.com", isCurrentUser: false, shareAmount: 140.0, status: "paid", settledAt: "2026-07-16T11:00:00.000Z" },
       { id: "p-1203", name: "David Kim", email: "david.kim@designco.com", isCurrentUser: false, shareAmount: 140.0, status: "unpaid" },
     ],
+  },
+];
+
+export const INITIAL_FRIENDS: Friend[] = [
+  {
+    id: "fr-1",
+    name: "Sarah Jenkins",
+    email: "sarah.j@techcorp.com",
+    status: "accepted",
+    createdAt: "2026-08-01T10:00:00.000Z",
+  },
+  {
+    id: "fr-2",
+    name: "David Kim",
+    email: "david.kim@designco.com",
+    status: "accepted",
+    createdAt: "2026-08-05T14:30:00.000Z",
+  },
+  {
+    id: "fr-3",
+    name: "Marcus Vance",
+    email: "marcus.v@gmail.com",
+    status: "accepted",
+    createdAt: "2026-08-10T09:15:00.000Z",
+  },
+  {
+    id: "fr-4",
+    name: "Elena Rostova",
+    email: "elena.r@gmail.com",
+    status: "accepted",
+    createdAt: "2026-08-15T16:20:00.000Z",
+  },
+  {
+    id: "fr-5",
+    name: "Chloe Zhao",
+    email: "chloe.z@studio.io",
+    status: "accepted",
+    createdAt: "2026-08-20T11:00:00.000Z",
+  },
+  {
+    id: "fr-6",
+    name: "Ryan Cooper",
+    email: "ryan.c@agency.com",
+    status: "accepted",
+    createdAt: "2026-08-25T13:45:00.000Z",
   },
 ];
 

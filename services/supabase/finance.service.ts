@@ -3,6 +3,7 @@ import {
   Account,
   Budget,
   FinancialProfile,
+  Friend,
   SplitBill,
   StoredFinanceData,
   Transaction,
@@ -14,6 +15,9 @@ import {
   budgetFromRow,
   budgetToRow,
   BudgetRow,
+  friendFromRow,
+  friendToRow,
+  FriendRow,
   profileFromRow,
   profileToRow,
   ProfileRow,
@@ -33,6 +37,7 @@ export interface RemoteFinancePayload {
   transactions: Transaction[];
   budgets: Budget[];
   splitBills: SplitBill[];
+  friends: Friend[];
 }
 
 /**
@@ -65,6 +70,7 @@ export async function fetchAllFromSupabase(): Promise<RemoteFinancePayload | nul
     }
 
     const [
+      authUserRes,
       profilesRes,
       accountsRes,
       transactionsRes,
@@ -72,7 +78,9 @@ export async function fetchAllFromSupabase(): Promise<RemoteFinancePayload | nul
       splitBillsRes,
       participantsRes,
       itemsRes,
+      friendsRes,
     ] = await Promise.all([
+      supabase.auth.getUser(),
       supabase.from("profiles").select("*").eq("user_id", userId).limit(1),
       supabase
         .from("accounts")
@@ -88,10 +96,14 @@ export async function fetchAllFromSupabase(): Promise<RemoteFinancePayload | nul
       supabase
         .from("split_bills")
         .select("*")
-        .eq("user_id", userId)
         .order("date", { ascending: false }),
       supabase.from("split_bill_participants").select("*"),
       supabase.from("split_bill_items").select("*"),
+      supabase
+        .from("friends")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false }),
     ]);
 
     if (accountsRes.error) {
@@ -119,18 +131,29 @@ export async function fetchAllFromSupabase(): Promise<RemoteFinancePayload | nul
       itemsByBill.set(it.bill_id, existing);
     }
 
-    const splitBills: SplitBill[] = ((splitBillsRes.data as SplitBillRow[]) || []).map(
-      (billRow) => {
-        const parts = participantsByBill.get(billRow.id) || [];
-        const its = itemsByBill.get(billRow.id) || [];
-        return splitBillFromRow(billRow, parts, its);
-      },
-    );
-
     let profile: FinancialProfile | undefined = undefined;
     if (profilesRes.data && profilesRes.data.length > 0) {
       profile = profileFromRow(profilesRes.data[0] as ProfileRow);
     }
+
+    const currentAuthUser = authUserRes.data?.user;
+    const currentUserContext = {
+      id: userId,
+      email: currentAuthUser?.email || profile?.email || null,
+      name: profile?.name || (currentAuthUser?.user_metadata?.name as string) || null,
+    };
+
+    const splitBills: SplitBill[] = ((splitBillsRes.data as SplitBillRow[]) || []).map(
+      (billRow) => {
+        const parts = participantsByBill.get(billRow.id) || [];
+        const its = itemsByBill.get(billRow.id) || [];
+        return splitBillFromRow(billRow, parts, its, currentUserContext);
+      },
+    );
+
+    const friends: Friend[] = (
+      (friendsRes.data as FriendRow[]) || []
+    ).map(friendFromRow);
 
     return {
       profile,
@@ -138,6 +161,7 @@ export async function fetchAllFromSupabase(): Promise<RemoteFinancePayload | nul
       transactions,
       budgets,
       splitBills,
+      friends,
     };
   } catch (err) {
     console.error("Failed to load from Supabase:", err);
@@ -409,6 +433,13 @@ export async function syncAllToSupabase(data: StoredFinanceData): Promise<{
       await persistSplitBillToSupabase(bill);
     }
 
+    // 6. Friends
+    if (data.friends && data.friends.length > 0) {
+      const friendRows = data.friends.map((f) => friendToRow(f, userId));
+      const { error: fErr } = await supabase.from("friends").upsert(friendRows);
+      if (fErr) console.warn("Failed to sync friends:", fErr);
+    }
+
     return { success: true, message: "Successfully synced all data to your private account!" };
   } catch (err: unknown) {
     console.error("Sync to Supabase failed:", err);
@@ -423,4 +454,107 @@ export async function syncAllToSupabase(data: StoredFinanceData): Promise<{
       message,
     };
   }
+}
+
+/**
+ * Persist a friend to Supabase (Strictly checks user_id)
+ */
+export async function persistFriendToSupabase(friend: Friend): Promise<boolean> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return false;
+
+  const userId = await getSupabaseUserId();
+  if (!userId) return false;
+
+  const row = friendToRow(friend, userId);
+  const { error } = await supabase.from("friends").upsert(row);
+  if (error) console.error("Failed to persist friend:", error);
+  return !error;
+}
+
+/**
+ * Remove a friend from Supabase (Strictly verifies ownership)
+ */
+export async function removeFriendFromSupabase(id: string): Promise<boolean> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return false;
+
+  const userId = await getSupabaseUserId();
+  if (!userId) return false;
+
+  const { error } = await supabase
+    .from("friends")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", userId);
+
+  if (error) console.error("Failed to delete friend:", error);
+  return !error;
+}
+
+/**
+ * Search registered users from personal_finance.profiles
+ */
+export async function searchRegisteredUsersInSupabase(
+  query: string,
+): Promise<{ id: string; userId: string; name: string; email: string }[]> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase || !query.trim()) return [];
+
+  const currentUserId = await getSupabaseUserId();
+
+  try {
+    const cleanQuery = query.trim();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, user_id, name, email")
+      .or(`name.ilike.%${cleanQuery}%,email.ilike.%${cleanQuery}%`)
+      .limit(10);
+
+    if (error) {
+      console.warn("Failed to search registered users:", error);
+      return [];
+    }
+
+    const userRows = (data as Array<{ id: string; user_id?: string | null; name?: string | null; email?: string | null }>) || [];
+
+    return userRows
+      .filter((u) => Boolean(u.user_id && u.user_id !== currentUserId))
+      .map((u) => ({
+        id: u.id,
+        userId: u.user_id as string,
+        name: u.name || "User",
+        email: u.email || "",
+      }));
+  } catch (err) {
+    console.error("User search error:", err);
+    return [];
+  }
+}
+
+/**
+ * Update settlement status for a participant on a split bill
+ */
+export async function updateParticipantSettlementInSupabase(
+  billId: string,
+  participantId: string,
+  isPaid: boolean,
+): Promise<boolean> {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return false;
+
+  const { error } = await supabase
+    .from("split_bill_participants")
+    .update({
+      status: isPaid ? "paid" : "unpaid",
+      settled_at: isPaid ? new Date().toISOString() : null,
+    })
+    .eq("bill_id", billId)
+    .eq("id", participantId);
+
+  if (error) {
+    console.error("Failed to update participant settlement:", error);
+    return false;
+  }
+  return true;
 }

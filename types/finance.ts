@@ -59,12 +59,24 @@ export type SplitMethod =
   | "shares"
   | "itemized";
 
+export interface Friend {
+  id: string;
+  userId?: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  status: "accepted" | "pending";
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export type SplitParticipantStatus = "unpaid" | "paid";
 
 export interface SplitParticipant {
   id: string;
   name: string;
   email?: string;
+  userId?: string;
   isCurrentUser: boolean;
   shareAmount: number;
   percentage?: number;
@@ -84,6 +96,7 @@ export type SplitBillStatus = "pending" | "partial" | "settled";
 
 export interface SplitBill {
   id: string;
+  userId?: string;
   title: string;
   date: string; // YYYY-MM-DD
   category: string;
@@ -140,6 +153,7 @@ export interface StoredFinanceData {
   transactions: Transaction[];
   budgets: Budget[];
   splitBills: SplitBill[];
+  friends?: Friend[];
   profile: FinancialProfile;
   version: number;
 }

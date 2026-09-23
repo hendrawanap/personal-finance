@@ -38,11 +38,8 @@ import {
 } from "@/lib/storage/financeStorage";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { useProfile } from "@/hooks/query/auth/profile";
-import {
-  getCurrentSupabaseUser,
-  updateSupabasePassword,
-  updateSupabaseUserProfile,
-} from "@/services/supabase/auth.service";
+import { updatePassword } from "@/services/auth/passwordReset";
+import { getCurrentSupabaseUser } from "@/services/supabase/auth.service";
 import { persistProfile } from "@/services/finance/finance.service";
 import { useLogout } from "@/hooks/mutation/auth/useLogout";
 import { FinancialProfile } from "@/types/finance";
@@ -182,8 +179,6 @@ export default function SettingsPage() {
   const [supabaseUser, setSupabaseUser] = useState<{
     id: string;
     email?: string;
-    createdAt?: string;
-    lastSignIn?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -193,8 +188,6 @@ export default function SettingsPage() {
           setSupabaseUser({
             id: u.id,
             email: u.email,
-            createdAt: u.created_at,
-            lastSignIn: u.last_sign_in_at,
           });
         }
       });
@@ -274,7 +267,7 @@ export default function SettingsPage() {
 
     setIsUpdatingPassword(true);
     try {
-      await updateSupabasePassword(newPassword);
+      await updatePassword(newPassword);
       toast.success("Password updated successfully");
       setPasswordDialogOpen(false);
       setNewPassword("");
@@ -470,30 +463,25 @@ export default function SettingsPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-xenia-ink-900">
-                  Supabase Status:
+                  Cloud Backend Status:
                 </span>
                 {supabaseConfigured ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-xenia-moss-50 px-2.5 py-0.5 text-xs font-semibold text-xenia-moss-700 border border-xenia-moss-200">
                     <span className="h-1.5 w-1.5 rounded-full bg-xenia-moss-600 animate-pulse" />
-                    Connected
+                    Connected via BFF
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-xenia-brass-50 px-2.5 py-0.5 text-xs font-semibold text-xenia-brass-700 border border-xenia-brass-200">
                     <span className="h-1.5 w-1.5 rounded-full bg-xenia-brass-500" />
-                    Waiting for Project URL
+                    Local Offline Mode
                   </span>
                 )}
               </div>
               <p className="mt-1 text-xs text-xenia-stone-500">
                 Schema: <code className="font-mono font-semibold text-xenia-moss-700">personal_finance</code>
                 {" • "}
-                RLS: <span className="font-semibold text-xenia-moss-700">Enabled by user_id</span>
+                Architecture: <span className="font-semibold text-xenia-moss-700">Next.js BFF (Pure DB Queries)</span>
               </p>
-              {!supabaseConfigured && (
-                <p className="mt-2 text-xs text-xenia-brass-700 bg-xenia-brass-50/80 p-2.5 rounded-xl border border-xenia-brass-200">
-                  To connect, add your <code className="font-semibold">NEXT_PUBLIC_SUPABASE_URL</code> and <code className="font-semibold">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in <code className="font-semibold">.env</code>.
-                </p>
-              )}
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <Buttons

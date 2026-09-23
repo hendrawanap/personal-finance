@@ -8,9 +8,31 @@ import toast from 'react-hot-toast'
 import qs from 'qs'
 import { v } from './apiVersion'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
-
 const isBrowser = typeof window !== 'undefined'
+
+const getApiBaseUrl = (): string => {
+  const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+  if (isBrowser) {
+    // In browser runtime, always use relative '/api' on same-origin
+    // unless explicitly pointed to an external non-localhost API domain.
+    // This prevents connection failures when Next.js runs on custom/dynamic dev ports (e.g. 4323 vs 3000).
+    if (!envUrl || envUrl.startsWith('/')) {
+      return (envUrl || '/api').replace(/\/+$/, '')
+    }
+    try {
+      const parsed = new URL(envUrl)
+      if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+        return (parsed.pathname || '/api').replace(/\/+$/, '')
+      }
+    } catch {
+      return '/api'
+    }
+    return envUrl.replace(/\/+$/, '')
+  }
+  return (envUrl || '/api').replace(/\/+$/, '')
+}
+
+const API_BASE_URL = getApiBaseUrl()
 
 // ── Helper token & bahasa ──
 // Self-contained biar nggak gantung ke util yang belum ada di xenia.

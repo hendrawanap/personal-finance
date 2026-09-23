@@ -1,16 +1,20 @@
-import { AdminLoginData, AdminLoginRequest } from "@/types/auth/auth";
+import {
+  AdminLoginData,
+  AdminLoginRequest,
+  ApiEnvelope,
+  AuthUser,
+  SignUpRequest,
+  SignUpResponse,
+} from "@/types/auth/auth";
 import { deleteCookie, setCookie } from "cookies-next";
 import { AuthProfile } from "@/types/auth/profile";
 import { Permission, PERMISSIONS } from "@/types/auth/permission.type";
 import { readFinanceDataFromLocalStorage } from "@/lib/storage/financeStorage";
-import { isSupabaseConfigured } from "@/lib/supabase/client";
-import {
-  signInWithSupabase,
-  signOutFromSupabase,
-  getSupabaseProfile,
-  AUTH_STORAGE_KEY,
-} from "@/services/supabase/auth.service";
+import { axiosPrivate, axiosPublic } from "@/lib/instance";
+import { v } from "@/lib/apiVersion";
 import { useFinanceStore } from "@/store/useFinanceStore";
+
+export const AUTH_STORAGE_KEY = "finance_auth_user";
 
 function isBrowser(): boolean {
   return typeof window !== "undefined";
@@ -19,63 +23,113 @@ function isBrowser(): boolean {
 const ALL_PERMISSIONS: Permission[] = [...PERMISSIONS];
 
 /**
- * Login handler. Uses Supabase Auth when configured,
- * otherwise falls back to local storage mock login.
+ * Login handler via Next.js BFF (/api/v1/auth/login)
  */
 export async function adminLogin(
   payload: AdminLoginRequest,
 ): Promise<AdminLoginData> {
-  if (isSupabaseConfigured()) {
-    const result = await signInWithSupabase(payload);
-    // Under strict isolation, synchronize only this user's private data
+  try {
+    const res = await axiosPublic.post<ApiEnvelope<AdminLoginData>>(
+      v("auth", "/login"),
+      payload,
+    );
+
+    const data = res.data?.data;
+    if (!data) {
+      throw new Error("Invalid response from server");
+    }
+
+    setCookie("accessToken", data.accessToken, { path: "/" });
+    setCookie("refreshToken", data.refreshToken, { path: "/" });
+
+    if (isBrowser()) {
+      window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
+    }
+
+    // Synchronize user's private financial data
     void useFinanceStore.getState().syncFromSupabase();
-    return result;
+
+    return data;
+  } catch (err) {
+    // If backend is down or in offline mode, fallback to local storage
+    if (isBrowser() && window.location.hostname === "localhost") {
+      const financeData = readFinanceDataFromLocalStorage();
+      const userName = payload.identifier.split("@")[0] || financeData.profile.name || "User";
+      const formattedName = userName.charAt(0).toUpperCase() + userName.slice(1);
+
+      const user: AuthUser = {
+        id: "usr-local-1",
+        email: payload.identifier,
+        name: formattedName,
+        roles: ["admin", "superadmin"],
+        permissions: ALL_PERMISSIONS,
+      };
+
+      const data: AdminLoginData = {
+        accessToken: "local-storage-access-token",
+        refreshToken: "local-storage-refresh-token",
+        user,
+      };
+
+      window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+      setCookie("accessToken", data.accessToken, { path: "/" });
+      setCookie("refreshToken", data.refreshToken, { path: "/" });
+      return data;
+    }
+    throw err;
+  }
+}
+
+/**
+ * Register a new user via Next.js BFF (/api/v1/auth/register)
+ */
+export async function signUp(
+  payload: SignUpRequest,
+): Promise<SignUpResponse> {
+  const res = await axiosPublic.post<ApiEnvelope<SignUpResponse>>(
+    v("auth", "/register"),
+    payload,
+  );
+
+  const data = res.data?.data;
+  if (!data) {
+    throw new Error("Invalid response from server");
   }
 
-  // Fallback offline / local login
-  const financeData = readFinanceDataFromLocalStorage();
-  const userName = payload.identifier.split("@")[0] || financeData.profile.name || "User";
-  const formattedName = userName.charAt(0).toUpperCase() + userName.slice(1);
-
-  const user = {
-    id: "usr-local-1",
-    email: payload.identifier,
-    name: formattedName,
-    roles: ["admin", "superadmin"],
-    permissions: ALL_PERMISSIONS,
-  };
-
-  const data: AdminLoginData = {
-    accessToken: "local-storage-access-token",
-    refreshToken: "local-storage-refresh-token",
-    user,
-  };
-
-  if (isBrowser()) {
-    window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+  if (data.accessToken) {
+    setCookie("accessToken", data.accessToken, { path: "/" });
+  }
+  if (data.refreshToken) {
+    setCookie("refreshToken", data.refreshToken, { path: "/" });
   }
 
-  setCookie("accessToken", data.accessToken, { path: "/" });
-  setCookie("refreshToken", data.refreshToken, { path: "/" });
+  if (data.user && isBrowser()) {
+    window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
+  }
 
   return data;
 }
 
-
-
 /**
- * Retrieve user profile from Supabase with fallback to local store
+ * Retrieve user profile via Next.js BFF (/api/v1/auth/me)
  */
 export async function getProfile(): Promise<AuthProfile> {
-  if (isSupabaseConfigured()) {
-    try {
-      const supabaseProfile = await getSupabaseProfile();
-      if (supabaseProfile) {
-        return supabaseProfile;
+  try {
+    const res = await axiosPrivate.get<ApiEnvelope<AuthProfile>>(
+      v("auth", "/me"),
+    );
+
+    if (res.data?.data) {
+      if (isBrowser()) {
+        window.localStorage.setItem(
+          AUTH_STORAGE_KEY,
+          JSON.stringify(res.data.data),
+        );
       }
-    } catch {
-      // Continue to local storage fallback
+      return res.data.data;
     }
+  } catch {
+    // Continue to local storage fallback
   }
 
   if (isBrowser()) {
@@ -109,30 +163,19 @@ export async function getProfile(): Promise<AuthProfile> {
 }
 
 /**
- * Logout and clear session, including private financial state
+ * Logout and clear session via Next.js BFF (/api/v1/auth/logout)
  */
 export async function logout(): Promise<void> {
-  if (isSupabaseConfigured()) {
-    await signOutFromSupabase();
+  try {
+    await axiosPrivate.post(v("auth", "/logout"));
+  } catch (err) {
+    console.warn("Logout BFF call failed:", err);
   }
 
   deleteCookie("accessToken", { path: "/" });
   deleteCookie("refreshToken", { path: "/" });
-  if (isBrowser()) {
-    try {
-      const cookies = document.cookie.split(";");
-      for (const cookie of cookies) {
-        const eqPos = cookie.indexOf("=");
-        const name = (eqPos > -1 ? cookie.substring(0, eqPos) : cookie).trim();
-        if (name.startsWith("sb-")) {
-          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
-          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=; SameSite=Lax`;
-        }
-      }
-    } catch {
-      // ignore
-    }
 
+  if (isBrowser()) {
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
     window.localStorage.removeItem("personal_finance_storage_v1");
   }

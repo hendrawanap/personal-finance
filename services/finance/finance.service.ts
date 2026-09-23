@@ -1,3 +1,4 @@
+import { getCookie } from "cookies-next";
 import { axiosPrivate } from "@/lib/instance";
 import { v } from "@/lib/apiVersion";
 import { ApiEnvelope } from "@/types/auth/auth";
@@ -25,6 +26,12 @@ export interface RemoteFinancePayload {
  * Strictly scoped to the authenticated user on the server.
  */
 export async function fetchFinanceData(): Promise<RemoteFinancePayload | null> {
+  // If in browser and unauthenticated, skip fetching remote data
+  if (typeof window !== "undefined") {
+    const token = getCookie("accessToken");
+    if (!token) return null;
+  }
+
   try {
     const res = await axiosPrivate.get<ApiEnvelope<RemoteFinancePayload>>(
       v("finance", "/sync"),

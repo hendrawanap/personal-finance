@@ -22,3 +22,16 @@ export interface ApiEnvelope<T> {
   errors: unknown
   meta?: { success: boolean; message?: string }
 }
+
+export interface SignUpRequest {
+  email: string
+  password: string
+  name: string
+}
+
+export interface SignUpResponse {
+  user: AuthUser | null
+  needsEmailConfirmation: boolean
+  accessToken?: string
+  refreshToken?: string
+}

@@ -36,9 +36,20 @@ export async function POST(request: NextRequest) {
   try {
     const userId = user.id;
 
-    // Delete existing records
-    await supabase.from("split_bill_items").delete().neq("id", "0");
-    await supabase.from("split_bill_participants").delete().neq("id", "0");
+    // Delete existing records scoped strictly to the current user
+    const { data: userBills } = await supabase
+      .from("split_bills")
+      .select("id")
+      .eq("user_id", userId);
+
+    const userBillIds = (userBills || []).map((b) => b.id);
+
+    if (userBillIds.length > 0) {
+      const idList = `(${userBillIds.map((id) => `"${id}"`).join(",")})`;
+      await supabase.from("split_bill_items").delete().filter("bill_id", "in", idList);
+      await supabase.from("split_bill_participants").delete().filter("bill_id", "in", idList);
+    }
+
     await supabase.from("split_bills").delete().eq("user_id", userId);
     await supabase.from("transactions").delete().eq("user_id", userId);
     await supabase.from("budgets").delete().eq("user_id", userId);

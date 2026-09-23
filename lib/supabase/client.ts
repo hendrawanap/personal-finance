@@ -1,34 +1,17 @@
-import { createBrowserClient } from "@supabase/ssr";
-
-let browserClient: ReturnType<typeof createBrowserClient> | null = null;
+/**
+ * Client-Side Supabase Adapter
+ * All Supabase operations are now proxied through Next.js BFF (/api/v1/auth/* and /api/v1/finance/*).
+ * Direct browser connections to Supabase have been completely eliminated.
+ */
 
 export function isSupabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  return Boolean(
-    url &&
-      key &&
-      !url.includes("your-project") &&
-      url.startsWith("http"),
-  );
+  if (typeof window === "undefined") {
+    return Boolean(process.env.SUPABASE_URL);
+  }
+  // In the browser, the Next.js BFF acts as the cloud backend
+  return true;
 }
 
-export function getSupabaseBrowserClient(): ReturnType<typeof createBrowserClient> | null {
-  if (typeof window === "undefined") return null;
-  if (!isSupabaseConfigured()) return null;
-
-  if (!browserClient) {
-    const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const url = rawUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const schema = process.env.NEXT_PUBLIC_SUPABASE_SCHEMA || "personal_finance";
-
-    browserClient = createBrowserClient(url, key, {
-      db: {
-        schema,
-      },
-    });
-  }
-
-  return browserClient;
+export function getSupabaseBrowserClient(): null {
+  return null;
 }

@@ -23,10 +23,37 @@ export async function GET(request: NextRequest) {
 
   try {
     const userId = user.id;
-    const { data: rawBills, error: billsErr } = await supabase
-      .from("split_bills")
-      .select("*")
-      .order("date", { ascending: false });
+    const userEmail = user.email?.trim().toLowerCase();
+
+    // 1. Find all bill IDs where the current user is a participant
+    let participantFilter = `user_id.eq.${userId}`;
+    if (userEmail) {
+      participantFilter += `,email.ilike.${userEmail}`;
+    }
+
+    const { data: participantRows, error: partLookupErr } = await supabase
+      .from("split_bill_participants")
+      .select("bill_id")
+      .or(participantFilter);
+
+    if (partLookupErr) throw partLookupErr;
+
+    const participantBillIds = Array.from(
+      new Set((participantRows || []).map((p) => p.bill_id)),
+    );
+
+    // 2. Fetch bills owned by user OR where user is a participant
+    let billsQuery = supabase.from("split_bills").select("*");
+    if (participantBillIds.length > 0) {
+      const idList = participantBillIds.map((id) => `"${id}"`).join(",");
+      billsQuery = billsQuery.or(`user_id.eq.${userId},id.in.(${idList})`);
+    } else {
+      billsQuery = billsQuery.eq("user_id", userId);
+    }
+
+    const { data: rawBills, error: billsErr } = await billsQuery.order("date", {
+      ascending: false,
+    });
 
     if (billsErr) throw billsErr;
 
@@ -102,6 +129,18 @@ export async function POST(request: NextRequest) {
 
   try {
     const userId = user.id;
+
+    // Verify ownership if updating an existing bill
+    const { data: existingBill } = await supabase
+      .from("split_bills")
+      .select("user_id")
+      .eq("id", bill.id)
+      .maybeSingle();
+
+    if (existingBill && existingBill.user_id && existingBill.user_id !== userId) {
+      return apiError("Unauthorized to modify this split bill", 403);
+    }
+
     const { bill: billRow, participants, items } = splitBillToRow(bill, userId);
 
     // 1. Upsert bill

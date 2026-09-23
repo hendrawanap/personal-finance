@@ -1,4 +1,5 @@
-import { signUpWithSupabase, SignUpRequest, SignUpResponse } from "@/services/supabase/auth.service";
+import { signUp } from "@/services/auth/auth.service";
+import { SignUpRequest, SignUpResponse } from "@/types/auth/auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -31,7 +32,7 @@ export function useRegister(options?: {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: (payload: SignUpRequest) => signUpWithSupabase(payload),
+    mutationFn: (payload: SignUpRequest) => signUp(payload),
     onSuccess: (data) => {
       if (data.needsEmailConfirmation) {
         toast.success("Account created! Please check your email to verify your account.");

@@ -37,6 +37,33 @@ export async function PATCH(
   }
 
   try {
+    // 1. Verify authorization: caller must be bill owner or the participant being settled
+    const [billRes, partRes] = await Promise.all([
+      supabase.from("split_bills").select("user_id").eq("id", billId).maybeSingle(),
+      supabase
+        .from("split_bill_participants")
+        .select("user_id, email")
+        .eq("id", participantId)
+        .eq("bill_id", billId)
+        .maybeSingle(),
+    ]);
+
+    if (!billRes.data || !partRes.data) {
+      return apiError("Split bill or participant not found", 404);
+    }
+
+    const isBillOwner = billRes.data.user_id === user.id;
+    const isTargetParticipant = Boolean(
+      (partRes.data.user_id && partRes.data.user_id === user.id) ||
+        (user.email &&
+          partRes.data.email &&
+          partRes.data.email.trim().toLowerCase() === user.email.trim().toLowerCase()),
+    );
+
+    if (!isBillOwner && !isTargetParticipant) {
+      return apiError("Unauthorized to update this settlement", 403);
+    }
+
     const { error } = await supabase
       .from("split_bill_participants")
       .update({

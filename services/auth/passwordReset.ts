@@ -1,8 +1,6 @@
-import { isSupabaseConfigured } from "@/lib/supabase/client";
-import {
-  requestSupabasePasswordReset,
-  updateSupabasePassword,
-} from "@/services/supabase/auth.service";
+import { axiosPrivate, axiosPublic } from "@/lib/instance";
+import { v } from "@/lib/apiVersion";
+import { ApiEnvelope } from "@/types/auth/auth";
 import {
   RequestPasswordResetPayload,
   MessageResponse,
@@ -13,12 +11,11 @@ import {
 export async function requestPasswordReset(
   payload: RequestPasswordResetPayload,
 ): Promise<MessageResponse> {
-  if (isSupabaseConfigured()) {
-    await requestSupabasePasswordReset(payload.email);
-    return { message: "Reset password instructions sent to your email." };
-  }
-
-  return { message: "Demo mode: password reset simulated." };
+  const res = await axiosPublic.post<ApiEnvelope<MessageResponse>>(
+    v("auth", "/reset-password"),
+    payload,
+  );
+  return res.data?.data || { message: "Reset password instructions sent to your email." };
 }
 
 export async function resendPasswordReset(
@@ -43,13 +40,22 @@ export async function validateResetToken(
   };
 }
 
+export async function updatePassword(
+  password: string,
+): Promise<MessageResponse> {
+  const res = await axiosPrivate.post<ApiEnvelope<MessageResponse>>(
+    v("auth", "/update-password"),
+    { password },
+  );
+  return res.data?.data || { message: "Password updated successfully." };
+}
+
 export async function confirmPasswordReset(
   payload: ResetPasswordPayload,
 ): Promise<MessageResponse> {
-  if (isSupabaseConfigured()) {
-    await updateSupabasePassword(payload.password);
-    return { message: "Password updated successfully." };
-  }
-
-  return { message: "Demo mode: password successfully reset." };
+  const res = await axiosPrivate.post<ApiEnvelope<MessageResponse>>(
+    v("auth", "/update-password"),
+    payload,
+  );
+  return res.data?.data || { message: "Password updated successfully." };
 }

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { getAuthenticatedUser } from "@/lib/supabase/server";
 import { apiError, apiSuccess, apiUnauthorized } from "@/lib/api/response";
 import { getFallbackStore } from "@/lib/storage/serverStore";
-import { profileFromRow, profileToRow, ProfileRow } from "@/types/supabase";
+import { profileFromRow, ProfileRow } from "@/types/supabase";
 import { FinancialProfile } from "@/types/finance";
 
 export async function GET(request: NextRequest) {

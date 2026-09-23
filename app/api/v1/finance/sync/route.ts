@@ -50,6 +50,31 @@ export async function GET(request: NextRequest) {
   try {
     const userId = user.id;
 
+    const userEmail = user.email?.trim().toLowerCase();
+
+    // Find all bill IDs where user is participant
+    let participantFilter = `user_id.eq.${userId}`;
+    if (userEmail) {
+      participantFilter += `,email.ilike.${userEmail}`;
+    }
+
+    const { data: participantRows } = await supabase
+      .from("split_bill_participants")
+      .select("bill_id")
+      .or(participantFilter);
+
+    const participantBillIds = Array.from(
+      new Set((participantRows || []).map((p) => p.bill_id)),
+    );
+
+    let splitBillsQuery = supabase.from("split_bills").select("*");
+    if (participantBillIds.length > 0) {
+      const idList = participantBillIds.map((id) => `"${id}"`).join(",");
+      splitBillsQuery = splitBillsQuery.or(`user_id.eq.${userId},id.in.(${idList})`);
+    } else {
+      splitBillsQuery = splitBillsQuery.eq("user_id", userId);
+    }
+
     // Fetch primary collections in parallel
     const [
       profilesRes,
@@ -71,10 +96,7 @@ export async function GET(request: NextRequest) {
         .eq("user_id", userId)
         .order("date", { ascending: false }),
       supabase.from("budgets").select("*").eq("user_id", userId),
-      supabase
-        .from("split_bills")
-        .select("*")
-        .order("date", { ascending: false }),
+      splitBillsQuery.order("date", { ascending: false }),
       supabase
         .from("friends")
         .select("*")
@@ -230,6 +252,17 @@ export async function POST(request: NextRequest) {
     // 5. Split Bills with atomic participant/item reconciliation
     if (body.splitBills && body.splitBills.length > 0) {
       for (const bill of body.splitBills) {
+        // Prevent overwriting bills owned by other users
+        const { data: existingBill } = await supabase
+          .from("split_bills")
+          .select("user_id")
+          .eq("id", bill.id)
+          .maybeSingle();
+
+        if (existingBill && existingBill.user_id && existingBill.user_id !== userId) {
+          continue;
+        }
+
         const { bill: billRow, participants, items } = splitBillToRow(bill, userId);
 
         await supabase.from("split_bills").upsert(billRow);

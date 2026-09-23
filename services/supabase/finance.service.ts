@@ -4,7 +4,6 @@
  * to provide atomic operations, strict server-side validation, and eliminate browser-level RLS bugs.
  */
 
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   fetchFinanceData,
   persistAccount,
@@ -33,14 +32,14 @@ import {
   Transaction,
 } from "@/types/finance";
 
+import { getProfile } from "@/services/auth/auth.service";
+
 export type { RemoteFinancePayload };
 
 export async function getSupabaseUserId(): Promise<string | null> {
-  const supabase = getSupabaseBrowserClient();
-  if (!supabase) return null;
   try {
-    const { data } = await supabase.auth.getUser();
-    return data.user?.id ?? null;
+    const profile = await getProfile();
+    return profile?.id ?? null;
   } catch {
     return null;
   }

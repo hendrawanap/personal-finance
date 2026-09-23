@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
-import { createClient, SupabaseClient, User } from "@supabase/supabase-js";
-import { isSupabaseConfigured } from "./client";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type SupabaseServerClient = SupabaseClient<any, "personal_finance", any>;
 
 export interface ServerAuthResult {
   user: {
@@ -8,22 +10,38 @@ export interface ServerAuthResult {
     email?: string;
     name?: string;
   };
-  supabase: SupabaseClient<any, any, any> | null;
+  supabase: SupabaseServerClient | null;
   isOffline: boolean;
+}
+
+export function isSupabaseServerConfigured(): boolean {
+  const url = process.env.SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_ANON_KEY;
+  return Boolean(
+    url &&
+      key &&
+      !url.includes("your-project") &&
+      url.startsWith("http"),
+  );
 }
 
 export function getSupabaseServerClient(
   token?: string,
-): SupabaseClient<any, any, any> | null {
-  if (!isSupabaseConfigured()) return null;
+): SupabaseServerClient | null {
+  if (!isSupabaseServerConfigured()) return null;
 
-  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const rawUrl = process.env.SUPABASE_URL!;
   const url = rawUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
   // Use service role key if available for server-side admin queries, otherwise anon key
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const schema = process.env.NEXT_PUBLIC_SUPABASE_SCHEMA || "personal_finance";
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_ANON_KEY!;
+  const schema = (process.env.SUPABASE_SCHEMA || "personal_finance") as "personal_finance";
 
-  const client = createClient<any, any>(url, key, {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const client = createClient<any, "personal_finance", any>(url, key, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -32,7 +50,7 @@ export function getSupabaseServerClient(
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     },
     db: {
-      schema: schema as any,
+      schema,
     },
   });
 
@@ -91,7 +109,7 @@ export async function getAuthenticatedUser(
   const token = extractTokenFromRequest(request);
 
   // Offline / local mock fallback mode
-  if (!isSupabaseConfigured() || token === "local-storage-access-token") {
+  if (!isSupabaseServerConfigured() || token === "local-storage-access-token") {
     return {
       user: {
         id: "usr-local-1",
@@ -122,13 +140,17 @@ export async function getAuthenticatedUser(
       return null;
     }
 
+    // For database operations, return a pure database query client
+    // that operates directly without attaching user-specific RLS bearer headers
+    const supabaseDb = getSupabaseServerClient();
+
     return {
       user: {
         id: user.id,
         email: user.email,
         name: (user.user_metadata?.name as string) || user.email?.split("@")[0] || "User",
       },
-      supabase,
+      supabase: supabaseDb || supabase,
       isOffline: false,
     };
   } catch (err) {

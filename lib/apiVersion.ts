@@ -32,6 +32,7 @@ export const SERVICE_VERSIONS = {
   "site-content": "v1",
   reviews: "v1",
   dashboard: "v1",
+  finance: "v1",
   "audit-logs": "v1",
 } as const;
 

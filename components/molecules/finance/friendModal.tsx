@@ -15,7 +15,7 @@ import { Field, TextInput } from "@/components/molecules/inputs/form";
 import { Buttons } from "@/components/atoms/buttons";
 import { PillTabs } from "@/components/atoms/pillTabs";
 import { useFinanceStore } from "@/store/useFinanceStore";
-import { searchRegisteredUsersInSupabase } from "@/services/supabase/finance.service";
+import { searchRegisteredUsers } from "@/services/finance/finance.service";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { Friend } from "@/types/finance";
 
@@ -65,7 +65,7 @@ export function FriendModal({ open, onClose, onFriendAdded }: FriendModalProps) 
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const results = await searchRegisteredUsersInSupabase(searchQuery);
+        const results = await searchRegisteredUsers(searchQuery);
         setSearchResults(results);
       } catch (err) {
         console.error("Search users error:", err);

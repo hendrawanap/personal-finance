@@ -43,6 +43,7 @@ import {
   updateSupabasePassword,
   updateSupabaseUserProfile,
 } from "@/services/supabase/auth.service";
+import { persistProfile } from "@/services/finance/finance.service";
 import { useLogout } from "@/hooks/mutation/auth/useLogout";
 import { FinancialProfile } from "@/types/finance";
 
@@ -211,10 +212,6 @@ export default function SettingsPage() {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   const handlePushToSupabase = async () => {
-    if (!supabaseConfigured) {
-      toast.error("Please configure NEXT_PUBLIC_SUPABASE_URL in .env");
-      return;
-    }
     setIsSyncingToSupabase(true);
     try {
       const res = await syncToSupabase();
@@ -232,17 +229,13 @@ export default function SettingsPage() {
   };
 
   const handlePullFromSupabase = async () => {
-    if (!supabaseConfigured) {
-      toast.error("Please configure NEXT_PUBLIC_SUPABASE_URL in .env");
-      return;
-    }
     setIsSyncingFromSupabase(true);
     try {
       const ok = await syncFromSupabase();
       if (ok) {
-        toast.success("Loaded latest finance records from Supabase");
+        toast.success("Loaded latest finance records from backend API");
       } else {
-        toast.error("No records found or failed to fetch from Supabase");
+        toast.error("No records found or failed to fetch from backend API");
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Fetch failed";
@@ -260,12 +253,11 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async (updated: FinancialProfile) => {
     updateProfile(updated);
-
-    if (supabaseConfigured) {
-      await updateSupabaseUserProfile(updated);
-      toast.success("Preferences updated and synced to Supabase profile");
+    const ok = await persistProfile(updated);
+    if (ok) {
+      toast.success("Preferences updated and synced to profile");
     } else {
-      toast.success("Preferences saved to LocalStorage");
+      toast.success("Preferences saved to local store");
     }
   };
 

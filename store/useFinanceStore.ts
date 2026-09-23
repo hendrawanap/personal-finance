@@ -22,23 +22,22 @@ import {
   StoredFinanceData,
   Transaction,
 } from "@/types/finance";
-import { isSupabaseConfigured } from "@/lib/supabase/client";
 import {
-  fetchAllFromSupabase,
-  persistAccountToSupabase,
-  removeAccountFromSupabase,
-  persistTransactionToSupabase,
-  removeTransactionFromSupabase,
-  persistBudgetToSupabase,
-  removeBudgetFromSupabase,
-  persistSplitBillToSupabase,
-  removeSplitBillFromSupabase,
-  persistProfileToSupabase,
-  persistFriendToSupabase,
-  removeFriendFromSupabase,
-  updateParticipantSettlementInSupabase,
-  syncAllToSupabase,
-} from "@/services/supabase/finance.service";
+  fetchFinanceData,
+  persistAccount,
+  removeAccount,
+  persistTransaction,
+  removeTransaction,
+  persistBudget,
+  removeBudget,
+  persistSplitBill,
+  removeSplitBill,
+  persistProfile,
+  persistFriend,
+  removeFriend,
+  updateParticipantSettlement,
+  syncAllFinanceData,
+} from "@/services/finance/finance.service";
 import { matchesPayer } from "@/lib/splitBillCalculations";
 
 interface FinanceStoreState {
@@ -127,7 +126,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
           createdAt: new Date().toISOString(),
         };
         set((state) => ({ accounts: [newAccount, ...state.accounts] }));
-        if (isSupabaseConfigured()) void persistAccountToSupabase(newAccount);
+        void persistAccount(newAccount);
         return newAccount;
       },
 
@@ -139,7 +138,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
               : acc,
           );
           const target = updatedAccounts.find((acc) => acc.id === id);
-          if (target && isSupabaseConfigured()) void persistAccountToSupabase(target);
+          if (target) void persistAccount(target);
           return { accounts: updatedAccounts };
         });
       },
@@ -150,7 +149,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
           // Also optionally keep or reassign transactions
           transactions: state.transactions.filter((tx) => tx.accountId !== id),
         }));
-        if (isSupabaseConfigured()) void removeAccountFromSupabase(id);
+        void removeAccount(id);
       },
 
       // ── Transactions ──
@@ -179,11 +178,9 @@ export const useFinanceStore = create<FinanceStoreState>()(
             );
           }
 
-          if (isSupabaseConfigured()) {
-            void persistTransactionToSupabase(newTx);
-            const acc = updatedAccounts.find((a) => a.id === data.accountId);
-            if (acc) void persistAccountToSupabase(acc);
-          }
+          void persistTransaction(newTx);
+          const acc = updatedAccounts.find((a) => a.id === data.accountId);
+          if (acc) void persistAccount(acc);
 
           return {
             transactions: [newTx, ...state.transactions],
@@ -245,12 +242,10 @@ export const useFinanceStore = create<FinanceStoreState>()(
             });
           }
 
-          if (isSupabaseConfigured()) {
-            void persistTransactionToSupabase(updatedTx);
-            for (const aId of [oldAccId, newAccId]) {
-              const acc = updatedAccounts.find((a) => a.id === aId);
-              if (acc) void persistAccountToSupabase(acc);
-            }
+          void persistTransaction(updatedTx);
+          for (const aId of [oldAccId, newAccId]) {
+            const acc = updatedAccounts.find((a) => a.id === aId);
+            if (acc) void persistAccount(acc);
           }
 
           return {
@@ -281,11 +276,9 @@ export const useFinanceStore = create<FinanceStoreState>()(
               : acc,
           );
 
-          if (isSupabaseConfigured()) {
-            void removeTransactionFromSupabase(id);
-            const acc = updatedAccounts.find((a) => a.id === txToDelete.accountId);
-            if (acc) void persistAccountToSupabase(acc);
-          }
+          void removeTransaction(id);
+          const acc = updatedAccounts.find((a) => a.id === txToDelete.accountId);
+          if (acc) void persistAccount(acc);
 
           return {
             transactions: state.transactions.filter((tx) => tx.id !== id),
@@ -301,7 +294,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
           id: `b-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         };
         set((state) => ({ budgets: [...state.budgets, newBudget] }));
-        if (isSupabaseConfigured()) void persistBudgetToSupabase(newBudget);
+        void persistBudget(newBudget);
         return newBudget;
       },
 
@@ -311,7 +304,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
             b.id === id ? { ...b, ...updates } : b,
           );
           const target = nextBudgets.find((b) => b.id === id);
-          if (target && isSupabaseConfigured()) void persistBudgetToSupabase(target);
+          if (target) void persistBudget(target);
           return { budgets: nextBudgets };
         });
       },
@@ -320,14 +313,14 @@ export const useFinanceStore = create<FinanceStoreState>()(
         set((state) => ({
           budgets: state.budgets.filter((b) => b.id !== id),
         }));
-        if (isSupabaseConfigured()) void removeBudgetFromSupabase(id);
+        void removeBudget(id);
       },
 
       // ── Profile ──
       updateProfile: (updates) => {
         set((state) => {
           const nextProfile = { ...state.profile, ...updates };
-          if (isSupabaseConfigured()) void persistProfileToSupabase(nextProfile);
+          void persistProfile(nextProfile);
           return { profile: nextProfile };
         });
       },
@@ -340,7 +333,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
           createdAt: new Date().toISOString(),
         };
         set((state) => ({ friends: [newFriend, ...state.friends] }));
-        if (isSupabaseConfigured()) void persistFriendToSupabase(newFriend);
+        void persistFriend(newFriend);
         return newFriend;
       },
 
@@ -352,7 +345,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
               : f,
           );
           const target = updatedFriends.find((f) => f.id === id);
-          if (target && isSupabaseConfigured()) void persistFriendToSupabase(target);
+          if (target) void persistFriend(target);
           return { friends: updatedFriends };
         });
       },
@@ -361,7 +354,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
         set((state) => ({
           friends: state.friends.filter((f) => f.id !== id),
         }));
-        if (isSupabaseConfigured()) void removeFriendFromSupabase(id);
+        void removeFriend(id);
       },
 
       // ── Split Bills ──
@@ -412,14 +405,12 @@ export const useFinanceStore = create<FinanceStoreState>()(
             createdAt: new Date().toISOString(),
           };
 
-          if (isSupabaseConfigured()) {
-            void persistSplitBillToSupabase(newBill);
-            if (linkedTxId) {
-              const tx = updatedTransactions.find((t) => t.id === linkedTxId);
-              if (tx) void persistTransactionToSupabase(tx);
-              const acc = updatedAccounts.find((a) => a.id === recordExpense?.accountId);
-              if (acc) void persistAccountToSupabase(acc);
-            }
+          void persistSplitBill(newBill);
+          if (linkedTxId) {
+            const tx = updatedTransactions.find((t) => t.id === linkedTxId);
+            if (tx) void persistTransaction(tx);
+            const acc = updatedAccounts.find((a) => a.id === recordExpense?.accountId);
+            if (acc) void persistAccount(acc);
           }
 
           return {
@@ -446,7 +437,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
               : b,
           );
           const target = updated.find((b) => b.id === id);
-          if (target && isSupabaseConfigured()) void persistSplitBillToSupabase(target);
+          if (target) void persistSplitBill(target);
           return { splitBills: updated };
         });
       },
@@ -455,7 +446,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
         set((state) => ({
           splitBills: state.splitBills.filter((b) => b.id !== id),
         }));
-        if (isSupabaseConfigured()) void removeSplitBillFromSupabase(id);
+        void removeSplitBill(id);
       },
 
       settleParticipant: (billId, participantId, isPaid, recordReimbursement) => {
@@ -537,18 +528,16 @@ export const useFinanceStore = create<FinanceStoreState>()(
             updatedAt: new Date().toISOString(),
           };
 
-          if (isSupabaseConfigured()) {
-            if (targetBill.userId && !targetBill.paidByCurrentUser) {
-              void updateParticipantSettlementInSupabase(billId, participantId, isPaid);
-            } else {
-              void persistSplitBillToSupabase(updatedBill);
-            }
-            if (recordReimbursement && isPaid && reimbTxId) {
-              const reimb = updatedTransactions.find((t) => t.id === reimbTxId);
-              if (reimb) void persistTransactionToSupabase(reimb);
-              const acc = updatedAccounts.find((a) => a.id === recordReimbursement.accountId);
-              if (acc) void persistAccountToSupabase(acc);
-            }
+          if (targetBill.userId && !targetBill.paidByCurrentUser) {
+            void updateParticipantSettlement(billId, participantId, isPaid);
+          } else {
+            void persistSplitBill(updatedBill);
+          }
+          if (recordReimbursement && isPaid && reimbTxId) {
+            const reimb = updatedTransactions.find((t) => t.id === reimbTxId);
+            if (reimb) void persistTransaction(reimb);
+            const acc = updatedAccounts.find((a) => a.id === recordReimbursement.accountId);
+            if (acc) void persistAccount(acc);
           }
 
           return {
@@ -677,16 +666,14 @@ export const useFinanceStore = create<FinanceStoreState>()(
             );
           }
 
-          if (isSupabaseConfigured()) {
-            for (const b of updatedSplitBills) {
-              if (b.userId && !b.paidByCurrentUser) {
-                const myPart = b.participants.find((p) => p.isCurrentUser);
-                if (myPart) {
-                  void updateParticipantSettlementInSupabase(b.id, myPart.id, isPaid);
-                }
-              } else {
-                void persistSplitBillToSupabase(b);
+          for (const b of updatedSplitBills) {
+            if (b.userId && !b.paidByCurrentUser) {
+              const myPart = b.participants.find((p) => p.isCurrentUser);
+              if (myPart) {
+                void updateParticipantSettlement(b.id, myPart.id, isPaid);
               }
+            } else {
+              void persistSplitBill(b);
             }
           }
 
@@ -736,9 +723,8 @@ export const useFinanceStore = create<FinanceStoreState>()(
       },
 
       syncFromSupabase: async () => {
-        if (!isSupabaseConfigured()) return false;
         try {
-          const remote = await fetchAllFromSupabase();
+          const remote = await fetchFinanceData();
           if (!remote) return false;
 
           set((state) => ({
@@ -753,14 +739,14 @@ export const useFinanceStore = create<FinanceStoreState>()(
           }));
           return true;
         } catch (err) {
-          console.error("Failed to sync from Supabase:", err);
+          console.error("Failed to sync from backend API:", err);
           return false;
         }
       },
 
       syncToSupabase: async () => {
         const current = get();
-        return syncAllToSupabase({
+        return syncAllFinanceData({
           accounts: current.accounts,
           transactions: current.transactions,
           budgets: current.budgets,
@@ -776,9 +762,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
-        if (isSupabaseConfigured()) {
-          void state?.syncFromSupabase();
-        }
+        void state?.syncFromSupabase();
       },
     },
   ),

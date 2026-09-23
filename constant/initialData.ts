@@ -1,4 +1,4 @@
-import { Account, Budget, FinancialProfile, Friend, SplitBill, Transaction } from "@/types/finance";
+import type { Account, Budget, FinancialProfile, Friend, SplitBill, Transaction } from "../types/finance.ts";
 
 export const INITIAL_PROFILE: FinancialProfile = {
   name: "Alex Morgan",

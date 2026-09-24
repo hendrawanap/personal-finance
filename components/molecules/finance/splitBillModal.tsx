@@ -146,9 +146,11 @@ function SplitBillForm({
     return "";
   });
   const [payerAccountId, setPayerAccountId] = useState(
-    () => billToEdit?.payerAccountId ?? (accounts[0]?.id || ""),
+    () => billToEdit?.payerAccountId ?? "",
   );
-  const [recordExpenseTx, setRecordExpenseTx] = useState(true);
+  const [recordExpenseTx, setRecordExpenseTx] = useState(
+    () => Boolean(billToEdit?.payerAccountId && billToEdit?.linkedTransactionId),
+  );
   const [notes, setNotes] = useState(() => billToEdit?.notes ?? "");
 
   // Participants
@@ -653,6 +655,11 @@ function SplitBillForm({
           }))
         : undefined;
 
+    const effectivePayerAccountId =
+      paidByCurrentUser && recordExpenseTx && payerAccountId.trim()
+        ? payerAccountId.trim()
+        : undefined;
+
     if (isEditing && billToEdit) {
       updateSplitBill(billToEdit.id, {
         title: title.trim(),
@@ -661,7 +668,7 @@ function SplitBillForm({
         totalAmount: numTotal,
         paidBy,
         paidByCurrentUser,
-        payerAccountId: paidByCurrentUser ? payerAccountId : undefined,
+        payerAccountId: effectivePayerAccountId,
         splitMethod,
         notes: notes.trim() || undefined,
         participants: finalParticipants,
@@ -680,7 +687,7 @@ function SplitBillForm({
           totalAmount: numTotal,
           paidBy,
           paidByCurrentUser,
-          payerAccountId: paidByCurrentUser ? payerAccountId : undefined,
+          payerAccountId: effectivePayerAccountId,
           splitMethod,
           notes: notes.trim() || undefined,
           participants: finalParticipants,
@@ -689,8 +696,8 @@ function SplitBillForm({
           tip: tip ? parseFloat(tip) : undefined,
           status: billStatus,
         },
-        paidByCurrentUser && recordExpenseTx && payerAccountId
-          ? { accountId: payerAccountId }
+        effectivePayerAccountId
+          ? { accountId: effectivePayerAccountId }
           : undefined,
       );
       toast.success("Split bill created successfully");
@@ -873,30 +880,35 @@ function SplitBillForm({
           </div>
         )}
 
-        {payerType === "you" && !isEditing && accounts.length > 0 && (
+        {payerType === "you" && !isEditing && (
           <div className="pt-2 space-y-3 border-t border-xenia-divider">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-xenia-ink-900">
-                  Record as Expense in Transactions
+                  Record as Expense in Transactions (Optional)
                 </p>
                 <p className="text-[11px] text-xenia-stone-500">
-                  Automatically deduct total amount from your account balance
+                  {accounts.length > 0
+                    ? "Optionally deduct total amount from one of your financial accounts"
+                    : "No accounts created. Split bills work independently without accounts."}
                 </p>
               </div>
-              <Switch
-                checked={recordExpenseTx}
-                onChange={setRecordExpenseTx}
-                aria-label="Record expense"
-              />
+              {accounts.length > 0 && (
+                <Switch
+                  checked={recordExpenseTx}
+                  onChange={setRecordExpenseTx}
+                  aria-label="Record expense"
+                />
+              )}
             </div>
 
-            {recordExpenseTx && (
-              <Field label="Paid From Account">
+            {recordExpenseTx && accounts.length > 0 && (
+              <Field label="Paid From Account (Optional)">
                 <NativeSelect
                   value={payerAccountId}
                   onChange={(e) => setPayerAccountId(e.target.value)}
                 >
+                  <option value="">None (Don&apos;t link to an account)</option>
                   {accounts.map((acc) => (
                     <option key={acc.id} value={acc.id}>
                       {acc.name} ({acc.institution}) - Balance:{" "}

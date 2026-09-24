@@ -30,7 +30,6 @@ export function ParticipantDebtCard({
 }: ParticipantDebtCardProps) {
   const { format } = useCurrency();
   const profile = useFinanceStore((s) => s.profile);
-  const accounts = useFinanceStore((s) => s.accounts);
   const settleAllForParticipant = useFinanceStore(
     (s) => s.settleAllForParticipant,
   );
@@ -69,12 +68,10 @@ export function ParticipantDebtCard({
   const handleSettleAll = () => {
     setIsSettling(true);
     try {
-      // Pick default account if user wants reimbursement recorded
-      const defaultAccount = accounts[0];
       settleAllForParticipant(
         participant.email || participant.name,
         true,
-        defaultAccount ? { accountId: defaultAccount.id } : undefined,
+        undefined,
       );
       toast.success(`Settled all shares with ${participant.name}`);
     } catch {

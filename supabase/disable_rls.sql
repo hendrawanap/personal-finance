@@ -80,3 +80,9 @@ GRANT ALL ON ALL ROUTINES IN SCHEMA personal_finance TO postgres, anon, authenti
 ALTER DEFAULT PRIVILEGES IN SCHEMA personal_finance GRANT ALL ON TABLES TO postgres, anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES IN SCHEMA personal_finance GRANT ALL ON SEQUENCES TO postgres, anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES IN SCHEMA personal_finance GRANT ALL ON ROUTINES TO postgres, anon, authenticated, service_role;
+
+-- 6. DROP FOREIGN KEY CONSTRAINTS FROM SPLIT BILLS (split bills do not require accounts)
+ALTER TABLE IF EXISTS personal_finance.split_bills
+    DROP CONSTRAINT IF EXISTS split_bills_payer_account_id_fkey;
+ALTER TABLE IF EXISTS personal_finance.split_bills
+    DROP CONSTRAINT IF EXISTS split_bills_linked_transaction_id_fkey;

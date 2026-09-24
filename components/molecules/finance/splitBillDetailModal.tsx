@@ -86,17 +86,20 @@ export function SplitBillDetailModal({
     }
 
     const isNowPaid = participant.status !== "paid";
+    const recordReimb =
+      isNowPaid && autoRecordReimbursement && isPaidByMe && reimbursementAccountId.trim()
+        ? { accountId: reimbursementAccountId.trim() }
+        : undefined;
+
     settleParticipant(
       currentBill.id,
       participant.id,
       isNowPaid,
-      isNowPaid && autoRecordReimbursement && isPaidByMe && reimbursementAccountId
-        ? { accountId: reimbursementAccountId }
-        : undefined,
+      recordReimb,
     );
 
     if (isNowPaid) {
-      if (autoRecordReimbursement && isPaidByMe && reimbursementAccountId) {
+      if (recordReimb) {
         toast.success(
           `Marked ${participant.name} as paid & recorded reimbursement in account`,
         );
@@ -295,6 +298,7 @@ export function SplitBillDetailModal({
                   onChange={(e) => setReimbursementAccountId(e.target.value)}
                   className="text-xs"
                 >
+                  <option value="">None (Don&apos;t record transaction)</option>
                   {accounts.map((acc) => (
                     <option key={acc.id} value={acc.id}>
                       {acc.name} ({format(acc.balance)})

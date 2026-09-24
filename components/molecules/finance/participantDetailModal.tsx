@@ -35,7 +35,6 @@ export function ParticipantDetailModal({
 }: ParticipantDetailModalProps) {
   const { format } = useCurrency();
   const profile = useFinanceStore((s) => s.profile);
-  const accounts = useFinanceStore((s) => s.accounts);
   const splitBills = useFinanceStore((s) => s.splitBills);
   const settleParticipant = useFinanceStore((s) => s.settleParticipant);
   const settleAllForParticipant = useFinanceStore(
@@ -93,11 +92,10 @@ export function ParticipantDetailModal({
   const handleSettleAll = () => {
     setIsSettlingAll(true);
     try {
-      const defaultAccount = accounts[0];
       settleAllForParticipant(
         participant.email || participant.name,
         true,
-        defaultAccount ? { accountId: defaultAccount.id } : undefined,
+        undefined,
       );
       toast.success(`Settled all shares with ${participant.name}`);
     } catch {

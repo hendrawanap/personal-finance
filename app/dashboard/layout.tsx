@@ -1,80 +1,56 @@
 "use client";
-import { useCallback, useState, useSyncExternalStore } from "react";
-import { usePathname } from "next/navigation";
-import Sidebar from "@/components/organisms/layout/sidebar";
-import Header from "@/components/organisms/layout/header";
-import { Toaster } from "react-hot-toast";
-import RouteGuard from "@/components/organisms/layout/routeGuard";
 
-const subscribeMedia = (callback: () => void) => {
-  const mql = window.matchMedia("(min-width: 768px)");
-  mql.addEventListener("change", callback);
-  return () => mql.removeEventListener("change", callback);
-};
-const getIsDesktopSnapshot = () =>
-  typeof window !== "undefined"
-    ? window.matchMedia("(min-width: 768px)").matches
-    : true;
-const getServerSnapshot = () => true;
+import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { Toaster } from "react-hot-toast";
+
+import { MobileHeader } from "@/components/organisms/layout/mobileHeader";
+import { MobileBottomNav } from "@/components/organisms/layout/mobileBottomNav";
+import { MobileDrawer } from "@/components/organisms/layout/mobileDrawer";
+import { QuickActionModal } from "@/components/organisms/layout/quickActionModal";
+import RouteGuard from "@/components/organisms/layout/routeGuard";
 
 export default function XeniaLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isDesktop = useSyncExternalStore(
-    subscribeMedia,
-    getIsDesktopSnapshot,
-    getServerSnapshot,
-  );
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [quickActionOpen, setQuickActionOpen] = useState(false);
 
-  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-
-  // Auto-close drawer on mobile when navigating routes
+  // Auto-close drawer on route change
   const [prevPathname, setPrevPathname] = useState(pathname);
   if (prevPathname !== pathname) {
     setPrevPathname(pathname);
-    setMobileDrawerOpen(false);
+    setDrawerOpen(false);
+    setQuickActionOpen(false);
   }
 
-  const sidebarOpen = isDesktop ? desktopSidebarOpen : mobileDrawerOpen;
-
-  const handleSetSidebarOpen = useCallback(
-    (value: boolean) => {
-      if (typeof window !== "undefined" && window.innerWidth >= 768) {
-        setDesktopSidebarOpen(value);
-      } else {
-        setMobileDrawerOpen(value);
-      }
-    },
-    [],
-  );
-
   return (
-    <div className="h-screen w-full overflow-hidden bg-xenia-canvas text-xenia-ink-900 font-ui">
-      <Toaster position="top-right" />
-      <div className="flex h-screen overflow-hidden">
-        {/* Backdrop — mobile only, closes sidebar on tap */}
-        {!isDesktop && mobileDrawerOpen && (
-          <div
-            onClick={() => setMobileDrawerOpen(false)}
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px] md:hidden"
-            aria-hidden="true"
-          />
-        )}
+    <div className="min-h-screen w-full bg-[#EDE7D9] text-xenia-ink-900 font-ui flex justify-center items-stretch sm:py-3 sm:px-4">
+      <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
 
-        <Sidebar
-          sidebarOpen={sidebarOpen}
-          onClose={() => handleSetSidebarOpen(false)}
-        />
+      {/* Mobile App Shell */}
+      <div className="relative flex min-h-screen sm:min-h-[92vh] sm:max-h-[96vh] w-full max-w-lg lg:max-w-xl flex-col bg-xenia-canvas sm:rounded-3xl sm:border sm:border-xenia-border/80 sm:shadow-2xl overflow-hidden">
+        {/* Mobile Header Bar */}
+        <MobileHeader onOpenDrawer={() => setDrawerOpen(true)} />
 
-        <div className="flex h-full flex-1 flex-col overflow-y-auto">
-          <Header
-            setSidebarOpen={handleSetSidebarOpen}
-            sidebarOpen={sidebarOpen}
-          />
-          {/* Sidebar dan header tetap dirender di luar penjaga: kalau satu
-              halaman ditolak, orangnya masih bisa pindah ke halaman lain. */}
+        {/* Scrollable Page Body */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           <RouteGuard>{children}</RouteGuard>
         </div>
+
+        {/* Mobile Bottom Navigation Bar */}
+        <MobileBottomNav
+          onOpenQuickAction={() => setQuickActionOpen(true)}
+          onOpenDrawer={() => setDrawerOpen(true)}
+        />
+
+        {/* Slide-out Menu Drawer */}
+        <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
+        {/* Quick Action FAB Bottom Sheet */}
+        <QuickActionModal
+          open={quickActionOpen}
+          onClose={() => setQuickActionOpen(false)}
+        />
       </div>
     </div>
   );

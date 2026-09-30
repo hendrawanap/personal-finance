@@ -24,7 +24,7 @@ export default function XeniaLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="h-screen h-[100dvh] w-full bg-[#EDE7D9] text-xenia-ink-900 font-ui flex justify-center items-center overflow-hidden sm:py-3 sm:px-4">
+    <div className="fixed inset-0 w-full bg-[#EDE7D9] text-xenia-ink-900 font-ui flex justify-center items-center overflow-hidden sm:p-4">
       <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
 
       {/* Mobile App Shell */}
@@ -33,7 +33,7 @@ export default function XeniaLayout({ children }: { children: React.ReactNode })
         <MobileHeader onOpenDrawer={() => setDrawerOpen(true)} />
 
         {/* Scrollable Page Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain [webkit-overflow-scrolling:touch]">
           <RouteGuard>{children}</RouteGuard>
         </div>
 

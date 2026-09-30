@@ -78,7 +78,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
       {/* Drawer Panel */}
       <div className="relative ml-auto flex h-full w-full max-w-xs flex-col bg-xenia-canvas text-xenia-ink-900 shadow-2xl transition-transform animate-in slide-in-from-right duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-xenia-border px-5 py-4">
+        <div className="flex items-center justify-between border-b border-xenia-border px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-xenia-moss-600 text-white shadow-xs">
               <Wallet02Icon size={17} strokeWidth={2} />
@@ -189,7 +189,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
         </div>
 
         {/* Footer with Logout */}
-        <div className="border-t border-xenia-border bg-white px-5 py-4">
+        <div className="border-t border-xenia-border bg-white px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={() => {

@@ -88,7 +88,7 @@ export function QuickActionModal({
       />
 
       {/* Modal / Bottom Sheet */}
-      <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-xenia-border bg-white p-5 shadow-2xl animate-in slide-in-from-bottom duration-200">
+      <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-xenia-border bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl animate-in slide-in-from-bottom duration-200">
         {/* Mobile drag handle */}
         <div className="mx-auto -mt-1 mb-3 h-1 w-10 rounded-full bg-xenia-border sm:hidden" />
 

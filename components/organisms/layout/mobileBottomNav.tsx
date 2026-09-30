@@ -33,7 +33,7 @@ export function MobileBottomNav({
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="shrink-0 sticky bottom-0 z-40 w-full border-t border-xenia-border bg-white/95 px-3 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.03)]"
+      className="shrink-0 sticky bottom-0 z-40 w-full border-t border-xenia-border bg-white/95 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.04)]"
     >
       <div className="flex items-center justify-around">
         {/* 1. Home */}

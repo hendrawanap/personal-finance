@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Cormorant_Garamond, Inter, Geist } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,15 @@ const mono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Personal Finance - Dashboard",
   description: "Personal finance and budget management dashboard.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#EDE7D9",
 };
 
 export default function RootLayout({

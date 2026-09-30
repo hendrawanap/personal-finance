@@ -110,7 +110,7 @@ export function MobileHeader({ onOpenDrawer }: MobileHeaderProps) {
 
   return (
     <>
-      <header className="shrink-0 sticky top-0 z-30 w-full border-b border-xenia-border/80 bg-xenia-canvas/90 px-4 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2.5 backdrop-blur-md">
+      <header className="shrink-0 sticky top-0 z-30 w-full border-b border-xenia-border/80 bg-xenia-canvas/90 px-4 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] pb-2.5 backdrop-blur-md sm:pt-3">
         <div className="flex items-center justify-between gap-3">
           {/* Left: User Avatar & Context Title */}
           <div className="flex items-center gap-2.5 min-w-0">

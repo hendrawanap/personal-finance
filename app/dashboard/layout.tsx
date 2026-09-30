@@ -24,16 +24,16 @@ export default function XeniaLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="fixed inset-0 w-full bg-[#EDE7D9] text-xenia-ink-900 font-ui flex justify-center items-center overflow-hidden sm:p-4">
+    <div className="min-h-screen min-h-dvh w-full bg-xenia-canvas sm:bg-[#EDE7D9] text-xenia-ink-900 font-ui flex justify-center items-center sm:p-4">
       <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
 
       {/* Mobile App Shell */}
-      <div className="relative flex h-full sm:h-[92vh] sm:max-h-[92vh] w-full max-w-lg lg:max-w-xl flex-col bg-xenia-canvas sm:rounded-3xl sm:border sm:border-xenia-border/80 sm:shadow-2xl overflow-hidden">
+      <div className="relative flex min-h-screen min-h-dvh sm:min-h-0 sm:h-[92vh] sm:max-h-[880px] w-full max-w-lg lg:max-w-xl flex-col bg-xenia-canvas sm:rounded-3xl sm:border sm:border-xenia-border/80 sm:shadow-2xl sm:overflow-hidden">
         {/* Mobile Header Bar */}
         <MobileHeader onOpenDrawer={() => setDrawerOpen(true)} />
 
         {/* Scrollable Page Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain [webkit-overflow-scrolling:touch]">
+        <div className="flex-1 sm:min-h-0 sm:overflow-y-auto sm:overscroll-y-contain [webkit-overflow-scrolling:touch]">
           <RouteGuard>{children}</RouteGuard>
         </div>
 

@@ -33,18 +33,21 @@ export function MobileBottomNav({
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="shrink-0 sticky bottom-0 z-40 w-full border-t border-xenia-border bg-white/95 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.04)]"
+      className="fixed bottom-0 left-0 right-0 z-40 w-full border-t border-xenia-border bg-white/95 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.04)] sm:sticky sm:bottom-0 sm:left-auto sm:right-auto sm:pb-2.5"
     >
       <div className="flex items-center justify-around">
         {/* 1. Home */}
         <Link
           href="/dashboard"
           className={cn(
-            "flex flex-1 flex-col items-center justify-center py-1 transition-colors group cursor-pointer",
+            "relative flex flex-1 flex-col items-center justify-center py-1 transition-colors group cursor-pointer",
             isHome ? "text-xenia-moss-700" : "text-xenia-stone-500 hover:text-xenia-ink-900",
           )}
         >
-          <div className="relative">
+          {isHome && (
+            <span className="absolute top-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-xenia-moss-600 shadow-[0_0_6px_rgba(79,107,82,0.8)]" />
+          )}
+          <div className="relative mt-0.5">
             <DashboardSquare01Icon
               size={20}
               strokeWidth={isHome ? 2.25 : 1.75}
@@ -59,22 +62,22 @@ export function MobileBottomNav({
           >
             Home
           </span>
-          {isHome && (
-            <span className="mt-0.5 h-1 w-1 rounded-full bg-xenia-moss-600 shadow-[0_0_6px_rgba(79,107,82,0.8)]" />
-          )}
         </Link>
 
         {/* 2. Transactions */}
         <Link
           href="/dashboard/transactions"
           className={cn(
-            "flex flex-1 flex-col items-center justify-center py-1 transition-colors group cursor-pointer",
+            "relative flex flex-1 flex-col items-center justify-center py-1 transition-colors group cursor-pointer",
             isTransactions
               ? "text-xenia-moss-700"
               : "text-xenia-stone-500 hover:text-xenia-ink-900",
           )}
         >
-          <div className="relative">
+          {isTransactions && (
+            <span className="absolute top-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-xenia-moss-600 shadow-[0_0_6px_rgba(79,107,82,0.8)]" />
+          )}
+          <div className="relative mt-0.5">
             <Invoice01Icon
               size={20}
               strokeWidth={isTransactions ? 2.25 : 1.75}
@@ -94,9 +97,6 @@ export function MobileBottomNav({
           >
             Activity
           </span>
-          {isTransactions && (
-            <span className="mt-0.5 h-1 w-1 rounded-full bg-xenia-moss-600 shadow-[0_0_6px_rgba(79,107,82,0.8)]" />
-          )}
         </Link>
 
         {/* 3. Center Raised (+) FAB */}
@@ -119,13 +119,16 @@ export function MobileBottomNav({
         <Link
           href="/dashboard/split-bills"
           className={cn(
-            "flex flex-1 flex-col items-center justify-center py-1 transition-colors group cursor-pointer",
+            "relative flex flex-1 flex-col items-center justify-center py-1 transition-colors group cursor-pointer",
             isSplitBills
               ? "text-xenia-moss-700"
               : "text-xenia-stone-500 hover:text-xenia-ink-900",
           )}
         >
-          <div className="relative">
+          {isSplitBills && (
+            <span className="absolute top-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-xenia-moss-600 shadow-[0_0_6px_rgba(79,107,82,0.8)]" />
+          )}
+          <div className="relative mt-0.5">
             <ReceiptDollarIcon
               size={20}
               strokeWidth={isSplitBills ? 2.25 : 1.75}
@@ -145,9 +148,6 @@ export function MobileBottomNav({
           >
             Split Bills
           </span>
-          {isSplitBills && (
-            <span className="mt-0.5 h-1 w-1 rounded-full bg-xenia-moss-600 shadow-[0_0_6px_rgba(79,107,82,0.8)]" />
-          )}
         </Link>
 
         {/* 5. More / Menu */}
@@ -156,7 +156,7 @@ export function MobileBottomNav({
           onClick={onOpenDrawer}
           className="flex flex-1 flex-col items-center justify-center py-1 text-xenia-stone-500 hover:text-xenia-ink-900 transition-colors group cursor-pointer"
         >
-          <div className="relative">
+          <div className="relative mt-0.5">
             <Menu01Icon
               size={20}
               strokeWidth={1.75}

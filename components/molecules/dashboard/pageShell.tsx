@@ -39,7 +39,7 @@ export function PageShell({
     spacing = "md",
 }: PageShellProps) {
     return (
-        <main className="flex-1 bg-xenia-canvas px-3.5 py-3 sm:px-4.5 sm:py-4 pb-8">
+        <main className="flex-1 bg-xenia-canvas px-3.5 py-3 sm:px-4.5 sm:py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:pb-8">
             <div className={cn("mx-auto w-full", WIDTH[width], SPACING[spacing], className)}>
                 {children}
             </div>
